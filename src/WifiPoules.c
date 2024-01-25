@@ -16,6 +16,8 @@
 //#include <PoulesAPI.h>
 #include <PoulesTime.h>
 #include <WifiPoules.h>
+#include <PoulesServer.h>
+#include <PoulesMail.h>
 
 
 //static const char *TAG  = "PoulesPoules Wifi";
@@ -30,14 +32,14 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
     {
         if(demandeConnexion)
         {
-            ESP_LOGI(TAG_WEB , "Connexion ...");
+            ESP_LOGI(TAG_WIFI , "Connexion ...");
             esp_wifi_connect();
         }
     } 
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) 
     {
         // reconnexion ?
-        ESP_LOGI(TAG_WEB , "Deconnexion !");
+        ESP_LOGI(TAG_WIFI , "Deconnexion !");
             esp_wifi_connect();
     } 
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) 
@@ -45,14 +47,21 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
          // Create a task with the scheduled_task function as the entry point
         int erreur_config_receiver=0;
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        ESP_LOGI(TAG_WEB , "Adresse IP : " IPSTR, IP2STR(&event->ip_info.ip));
+        ESP_LOGI(TAG_WIFI , "Adresse IP : " IPSTR, IP2STR(&event->ip_info.ip));
         obtain_time();
         ESP_LOGI(TAG_SCHEDULE, "Start " );
         erreur_config_receiver= xTaskCreate(&scheduled_task, "ScheduledTask", 2048, NULL, 5, NULL);
         if (erreur_config_receiver != 0)
         {    
             ESP_LOGI(TAG_SCHEDULE, "Task Ok " );
-         }
+        }
+        if (server_httpd == NULL) 
+        {   ESP_LOGI(TAG_WIFI , "Demarrage serveur HTTP");
+            server_httpd = start_webserver();
+        }
+
+        //test email
+        xTaskCreate(&smtp_client_task, "send_email_task", 4096, NULL, 5, NULL);
     }
 }
 

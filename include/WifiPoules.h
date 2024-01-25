@@ -3,7 +3,8 @@
 
 #include "esp_event.h"
 
-#define TAG_WEB   "PoulesPoules Wifi"
+#define TAG_WIFI  "PoulesPoules Wifi"
+
 
 //#define ESP_WIFI_SSID       "Pepe&Co"
 //#define ESP_WIFI_PASSWORD   "Rog31Dan37"

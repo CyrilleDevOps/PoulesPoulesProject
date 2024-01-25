@@ -3,21 +3,14 @@
 //Global
 
 
-#define TAG_MAIN "Start"
-#define TAG_RF "RF433"
-#define TAG_WEB "WEB"
+
 #define TAG_API "API"
 
-#define SMTP_SERVER "your_smtp_server"
-#define SMTP_PORT 587
-#define SENDER_EMAIL "your_email@example.com"
-#define SENDER_PASSWORD "your_email_password"
-#define RECIPIENT_EMAIL "recipient_email@example.com"
 
 //Declaration Config GPIO
 //Sortie 
-//#define Led_16 GPIO_NUM_16
-//#define Led_17 GPIO_NUM_17
+#define Led_Ouverte GPIO_NUM_16
+#define Led_Fermee GPIO_NUM_17
 
 #define Moteur_R1 GPIO_NUM_14
 #define Moteur_R2 GPIO_NUM_15
@@ -72,8 +65,9 @@ void configure_Input(uint64_t  Parametre_pin_bit_mask);
 int position_porte (void *Parametre_porte );
 char *position_porte_texte(int PositionPorte);
 void action_moteur(moteur *Parametre_Moteur,int Sens_Rotation);
-void API_Action_Porte(void *Parametre_Porte);
+void Task_Action_Porte(void *Parametre_Porte);
 void Config_Struct_Porte(porte *myPorte);
+void Action_Porte(porte *myPorte,char*  action);
 
 int init_wifi();
 void connect_wifi();

@@ -1,8 +1,8 @@
 //
-
 #include <PoulesAPI.h>
 #include <PoulesTime.h>
 #include <WifiPoules.h>
+#include <PoulesMail.h>
 #include <PoulesDashboard.h>
 
 #include "freertos/FreeRTOS.h"
@@ -13,8 +13,12 @@
 #include "ds18b20.h"
 
 #include "esp32_rf_receiver.h"
+#define LOG_LOCAL_LEVEL ESP_LOG_INFO
 #include "esp_log.h"
 #include "nvs_flash.h"
+
+
+#define TAG_MAIN "Start"
 
 void app_main_wifi()
 
@@ -71,7 +75,7 @@ void app_main_NOWIFI()
     */
 
     Config_Struct_Porte(myPorte);
-    xTaskCreate(API_Action_Porte,"ACTION_PORTE",2048 ,myPorte,1,NULL);
+    xTaskCreate(Task_Action_Porte,"ACTION_PORTE",2048 ,myPorte,1,NULL);
     //free(myPorte->Moteur_Porte);
     //free(myPorte);  
     printf("FIN*************************************\n");
@@ -117,7 +121,8 @@ void app_main() //Receiver 433
   //app_main_wifi();
 
     // Initialize the WiFi and connect to the network
-    esp_err_t ret = nvs_flash_init();
+    
+    nvs_flash_init();
    
     if(init_wifi() == ESP_OK)
     {
@@ -132,7 +137,7 @@ void app_main() //Receiver 433
   {    
     xTaskCreate(&receiver_rf433, "receiver_rf433", 2048, NULL, 3, NULL);
   }
-  
+    
 
 }
 

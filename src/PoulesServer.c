@@ -1,148 +1,28 @@
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
+
 #include "esp_system.h"
 #include "esp_wifi.h"
-
+#include "esp_log.h"
 #include "esp_event.h"
 #include "esp_http_server.h"
+
 #include "nvs_flash.h"
 #include <sys/param.h>
 
 #include <PoulesAPI.h>
-#include "esp_log.h"
+#include <PoulesServer.h>
 
 
-//#define ESP_WIFI_SSID       "Pepe&Co"
-//#define ESP_WIFI_PASSWORD   "Rog31Dan37"
-#define ESP_WIFI_SSID       "Freebox-09538F"
-#define ESP_WIFI_PASSWORD   "uncinatis63-sagarem2-aient2?-cutit%"
-#define NB_RESEAUX_MAX      16
-#define WEB_SERVER_PORT     80
+
 
 int count=0;
 
 //static const char *TAG  = "PoulesPoules Wifi";
-static bool demandeConnexion = false;
-httpd_handle_t server_httpd = NULL;
+//static bool demandeConnexion = false;
+//httpd_handle_t server_httpd = NULL;
 
-httpd_handle_t start_webserver();
-void stop_webserver(httpd_handle_t server);
-
-// Gestionnaire d'évènements
-static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
-{
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) 
-    {
-        if(demandeConnexion)
-        {
-            ESP_LOGI(TAG_WEB , "Connexion ...");
-            esp_wifi_connect();
-        }
-    } 
-    else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) 
-    {
-        // reconnexion ?
-        ESP_LOGI(TAG_WEB , "Deconnexion !");
-        stop_webserver(server_httpd);
-    } 
-    else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) 
-    {
-        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        ESP_LOGI(TAG_WEB , "Adresse IP : " IPSTR, IP2STR(&event->ip_info.ip));
-        if (server_httpd == NULL) 
-        {   ESP_LOGI(TAG_WEB , "Demarrage serveur HTTP");
-            server_httpd = start_webserver();
-        }
-    }
-}
-
-//static esp_err_t init_wifi()
-esp_err_t init_wifi()
-{
-    // initialise la pile TCP/IP
-    ESP_ERROR_CHECK(esp_netif_init());
-    // crée une boucle d'évènements
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-    // crée 
-    esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
-    assert(sta_netif);
-
-    // initialise la configuration Wifi par défaut 
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    // initialise le WiFi avec la configuration par défaut et démarre également la tâche WiFi.
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-   
-    // installe le gestionnaire d'évènements Wifi
- 
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL));
-
-    // définit le mode de fonctionnement station pour le WiFi
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-
-    // démarre le WiFi selon la configuration
-    esp_err_t ret = esp_wifi_start();
-    ESP_ERROR_CHECK(ret);
-
-    return ret;
-}
-
-/*static bool scan_wifi()
-{
-    bool present = false;
-    uint16_t number = NB_RESEAUX_MAX;
-    wifi_ap_record_t ap_info[NB_RESEAUX_MAX];
-    uint16_t ap_count = 0;
-    memset(ap_info, 0, sizeof(ap_info));
-
-    // démarre le scan
-    ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
-    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&number, ap_info));
-    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
-
-    ESP_LOGI(TAG_WEB , "Nb reseaux trouves = %u", ap_count);
-    for (int i = 0; (i < NB_RESEAUX_MAX) && (i < ap_count); i++)
-    {
-        // cf. https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/network/esp_wifi.html?highlight=wifi_ap_record_t#_CPPv416wifi_ap_record_t
-        ESP_LOGI(TAG_WEB , "SSID \t\t%s", ap_info[i].ssid);
-        ESP_LOGI(TAG_WEB , "RSSI \t\t%d", ap_info[i].rssi);
-        ESP_LOGI(TAG_WEB , "Channel \t\t%d\n", ap_info[i].primary);
-        if(strcmp((char *)ap_info[i].ssid, ESP_WIFI_SSID) == 0)
-            present = true;
-    }
-
-    return present;
-}
-*/
-
-static void restart_wifi()
-{
-    ESP_ERROR_CHECK(esp_wifi_stop());
-    ESP_ERROR_CHECK(esp_wifi_start());
-}
-
-//static void connect_wifi()
-void connect_wifi()
-{
-    // configure la connexion Wifi du point d'accès (AP)
-    wifi_config_t wifi_config = {
-        .sta = {
-        .ssid = ESP_WIFI_SSID,
-        .password = ESP_WIFI_PASSWORD,
-        .threshold.authmode = WIFI_AUTH_WPA2_PSK,
-        .pmf_cfg = {
-            .capable = true,
-            .required = false
-            },
-        },
-    };
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
-    demandeConnexion = true;
-    restart_wifi();
-}
-
-// Gestionnaire d'URI pour une requête GET /porte
 esp_err_t get_handler(httpd_req_t *req)
 {
     char*   buf=NULL;
@@ -195,40 +75,15 @@ esp_err_t get_handler(httpd_req_t *req)
     {  
         count++;
         ESP_LOGD(TAG_WEB , "%d-Debut*************************************\n",count);
-         if (strcmp(action,"ouvre")==0 )         //Ouvre_Porte();
-        { 
         porte *myPorte=NULL;
         myPorte = malloc(sizeof(porte)+4);  
         Config_Struct_Porte(myPorte);   
-        myPorte->Moteur_Porte.Sens = MOTEUR_OUVERTURE;
-        ESP_LOGD(TAG_WEB , "Ouvre Porte (0:Arret-1:Ouvre-2:Ferme/0:action): %d\n",myPorte->Moteur_Porte.Sens);
-        xTaskCreate(API_Action_Porte,"ACTION_PORTE",2048 ,myPorte,1,NULL);      
-        }
-         else if (strcmp(action,"ferme")==0 )    //Ferme_Porte();
-        { 
-        porte *myPorte=NULL;
-        myPorte = malloc(sizeof(porte)+4);  
-        Config_Struct_Porte(myPorte);        
-        myPorte->Moteur_Porte.Sens = MOTEUR_FERMETURE;
-        ESP_LOGD(TAG_WEB , "Ferme Porte (0:Arret-1:Ouvre-2:Ferme/0:action): %d\n",myPorte->Moteur_Porte.Sens);
-        xTaskCreate(API_Action_Porte,"ACTION_PORTE",2048 ,myPorte,1,NULL);
-        }  
-        else if (strcmp(action,"statut")==0 )    //Ferme_Porte();
-        {
-        porte *myPorteStatus=NULL;
-       
-        myPorteStatus = malloc(sizeof(porte)+4);  
-        Config_Struct_Porte(myPorteStatus); 
-        ESP_LOGD(TAG_WEB, "Position de la Porte %d.\n", myPorteStatus->Porte_Position);
-        action = position_porte_texte(myPorteStatus->Porte_Position);
-        free(myPorteStatus);
-        }
-        ESP_LOGD(TAG_WEB , "%d-Fin ************************************\n",count);
+        Action_Porte(myPorte,action);
+        ESP_LOGD(TAG_WEB , "%d-Fin ************************************\n",count);    
+        char resp[] = "-It works!->";         // envoie une réponse   
+        strcat(resp,action);
+        httpd_resp_send(req, resp, HTTPD_RESP_USE_STRLEN);
     }
-    char resp[] = "-It works!->";         // envoie une réponse   
-    strcat(resp,action);
-    httpd_resp_send(req, resp, HTTPD_RESP_USE_STRLEN);
-    
     return ESP_OK;
 }
 

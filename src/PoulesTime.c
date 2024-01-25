@@ -12,8 +12,7 @@
 #include <sys/param.h>
 #include "nvs_flash.h"
 
-//#include <PoulesAPI.h>
-
+#include <PoulesAPI.h>
 #include <PoulesTime.h>
 
 static void initialize_sntp(void)
@@ -62,18 +61,31 @@ void scheduled_task(void *pvParameter)
 
     while (1) {
         // Get the current time
-
+        char*  action=NULL;
         time_t now;
         struct tm timeinfo;
         time(&now);
+        setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
+        tzset();
         localtime_r(&now, &timeinfo);
 
 
-        if (timeinfo.tm_sec == 20) 
+        if ((timeinfo.tm_hour == HEURE_OUVERTURE && timeinfo.tm_min == HEURE_MINUTE_OUVERTURE) || 
+            (timeinfo.tm_hour == HEURE_FERMETURE && timeinfo.tm_min == HEURE_MINUTE_FERMETURE))
         {
             ESP_LOGI(TAG_SCHEDULE, "Executing scheduled task every minute at 10s %d:%d:%d",timeinfo.tm_hour ,timeinfo.tm_min,timeinfo.tm_sec);
-            
-            // Your task code goes here
+            ESP_LOGD(TAG_SCHEDULE , "Debut*************************************\n");
+            porte *myPorte=NULL;
+            myPorte = malloc(sizeof(porte)+4);  
+            Config_Struct_Porte(myPorte);
+            if (myPorte->Porte_Position==PORTE_OUVERTE)
+                {action="ferme";}
+            else if (myPorte->Porte_Position==PORTE_FERMEE)
+                {action="ouvre";}
+            else
+                {action="ouvre";}
+            Action_Porte(myPorte,action);
+            ESP_LOGD(TAG_SCHEDULE , "Fin ************************************\n");    
         }
     
         // ESP_LOGI(TAG, "Executing scheduled task every minute at 10s");

@@ -18,6 +18,7 @@
 
 #define ADVANCED_OUTPUT 1
 #define TAG "RF433"
+#define TAG_RF "RF433"
 
     /**
      * Description of a single pulse, which consists of a high signal

@@ -231,7 +231,17 @@ exit:
     return ret;
 }
 
-void smtp_client_task(void *pvParameters)
+void Affiche_Mail_Content(char *Etape,message_mail *Mymessage)
+{
+    printf("%s->Mymessage->from =%s\n",Etape,Mymessage->from);
+    printf("%s->Mymessage->to =%s\n",Etape,Mymessage->to);
+    printf("%s->Mymessage->subject =%s\n",Etape,Mymessage->subject);
+    printf("%s->Mymessage->body =%s\n",Etape,Mymessage->body);
+    printf("%s->Mymessage->ack =%d\n",Etape,Mymessage->ack);
+
+}
+
+void smtp_client_task(void *Parametre_Mail)
 {
     char *buf = NULL;
     unsigned char base64_buffer[128];
@@ -245,6 +255,12 @@ void smtp_client_task(void *pvParameters)
     mbedtls_ssl_config conf;
     mbedtls_net_context server_fd;
 
+
+    message_mail *TheMail=NULL;
+    TheMail = Parametre_Mail;
+  
+    Affiche_Mail_Content("1-smtp_client_task",TheMail);
+  
     mbedtls_ssl_init(&ssl);
     mbedtls_x509_crt_init(&cacert);
     mbedtls_ctr_drbg_init(&ctr_drbg);
@@ -290,9 +306,6 @@ void smtp_client_task(void *pvParameters)
     mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_REQUIRED);
     mbedtls_ssl_conf_ca_chain(&conf, &cacert, NULL);
     mbedtls_ssl_conf_rng(&conf, mbedtls_ctr_drbg_random, &ctr_drbg);
-#ifdef CONFIG_MBEDTLS_DEBUG
-    mbedtls_esp_enable_debug_log(&conf, 4);
-#endif
 
     if ((ret = mbedtls_ssl_setup(&ssl, &conf)) != 0) {
         ESP_LOGE(TAG_MAIL, "mbedtls_ssl_setup returned -0x%x", -ret);
@@ -373,8 +386,12 @@ void smtp_client_task(void *pvParameters)
     ret = write_ssl_and_get_response(&ssl, (unsigned char *) buf, len);
     VALIDATE_MBEDTLS_RETURN(ret, 200, 299, exit);
 
+
+
     ESP_LOGI(TAG_MAIL, "Write RCPT");
-    len = snprintf((char *) buf, BUF_SIZE, "RCPT TO:<%s>\r\n", RECIPIENT_MAIL);
+    len = snprintf((char *) buf, BUF_SIZE, "RCPT TO:<%s>\r\n", TheMail->to);
+    ESP_LOGD(TAG_MAIL, "1-Sent_Mail->Mymessage->to =%s\n",buf);
+
     ret = write_ssl_and_get_response(&ssl, (unsigned char *) buf, len);
     VALIDATE_MBEDTLS_RETURN(ret, 200, 299, exit);
 
@@ -384,37 +401,25 @@ void smtp_client_task(void *pvParameters)
     VALIDATE_MBEDTLS_RETURN(ret, 300, 399, exit);
 
     ESP_LOGI(TAG_MAIL, "Write Content");
-    /* We do not take action if message sending is partly failed. */
     len = snprintf((char *) buf, BUF_SIZE,
-                   "From: %s\r\nSubject: mbed TLS Test mail\r\n"
+                   "From: %s\r\nSubject: %s\r\n"
                    "To: %s\r\n"
-                   "MIME-Version: 1.0 (mime-construct 1.9)\n",
-                   "ESP32 SMTP Client", RECIPIENT_MAIL);
-
+                   "MIME-Version: 1.0 (mime-construct 1.9)\n",TheMail->from,TheMail->subject, TheMail->to);
     /**
      * Note: We are not validating return for some ssl_writes.
      * If by chance, it's failed; at worst email will be incomplete!
      */
-    
+    ESP_LOGD(TAG_MAIL, "1-Sent_Mail->Header =%s\n",buf);
     ret = write_ssl_data(&ssl, (unsigned char *) buf, len);
     
-    /* Multipart boundary */
-    len = snprintf((char *) buf, BUF_SIZE,
-                   "Content-Type: multipart/mixed;boundary=XYZabcd1234\n"
-                   "--XYZabcd1234\n");
-    ret = write_ssl_data(&ssl, (unsigned char *) buf, len);
-
-    /* Text */
-    len = snprintf((char *) buf, BUF_SIZE,
+   len = snprintf((char *) buf, BUF_SIZE,
                    "Content-Type: text/plain\n"
-                   "This is a simple test mail from the SMTP client example.\r\n"
                    "\r\n"
-                   "Enjoy!\n\n--XYZabcd1234\n");
-    ret = write_ssl_data(&ssl, (unsigned char *) buf, len);
+                   "%s\r\n"
+                   "\r\n"
+                   "Enjoy!\n",TheMail->body);
 
-
-
-    len = snprintf((char *) buf, BUF_SIZE, "\n--XYZabcd1234\n");
+    ESP_LOGD(TAG_MAIL, "1-Sent_Mail->Body =%s\n",buf);
     ret = write_ssl_data(&ssl, (unsigned char *) buf, len);
 
     len = snprintf((char *) buf, BUF_SIZE, "\r\n.\r\n");
@@ -425,6 +430,7 @@ void smtp_client_task(void *pvParameters)
     /* Close connection */
     mbedtls_ssl_close_notify(&ssl);
     ret = 0; /* No errors */
+    TheMail->ack =ret;
 
 exit:
     mbedtls_net_free(&server_fd);
@@ -433,7 +439,7 @@ exit:
     mbedtls_ssl_config_free(&conf);
     mbedtls_ctr_drbg_free(&ctr_drbg);
     mbedtls_entropy_free(&entropy);
-
+    TheMail->ack =ret;
     if (ret != 0) {
         mbedtls_strerror(ret, buf, 100);
         ESP_LOGE(TAG_MAIL, "Last error was: -0x%x - %s", -ret, buf);

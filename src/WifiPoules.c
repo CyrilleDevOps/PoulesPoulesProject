@@ -18,6 +18,7 @@
 #include <WifiPoules.h>
 #include <PoulesServer.h>
 #include <PoulesMail.h>
+#include <PoulesAPI.h>
 
 
 //static const char *TAG  = "PoulesPoules Wifi";
@@ -61,7 +62,13 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
         }
 
         //test email
-        xTaskCreate(&smtp_client_task, "send_email_task", 8192, NULL, 5, NULL);
+        char *message=NULL;
+        message = (char *) calloc(1, BUF_SIZE);
+        snprintf((char *) message, BUF_SIZE, "Adresse IP : %d:%d:%d:%d" , IP2STR(&event->ip_info.ip));
+        Poules_Mail_content ("INIT sur IP : ",message) ;
+        free (message);
+        
+       
     }
 }
 

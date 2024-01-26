@@ -4,9 +4,9 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
-//#include "esp_smtp.h"
 
 #include "PoulesAPI.h"
+#include "PoulesMail.h"
 #include "esp_log.h"
 
 
@@ -135,32 +135,6 @@ void action_moteur(moteur *Parametre_Moteur,int Sens_Rotation)
     }    
 }
 
-
-
-void Poules_Mail (void *pvParameters) 
-{/*
-    while (1) {
-        // Configure the email message
-        smtp_message_t message = {
-            .subject = "ESP32 Email Test",
-            .to = RECIPIENT_EMAIL,
-            .from = SENDER_EMAIL,
-            .text = "This is a test email sent from ESP32 with ESP-IDF."
-        };
-
-        // Send the email
-        if (esp_smtp_send(&message) == ESP_OK) {
-            ESP_LOGI("EMAIL", "Email sent successfully");
-        } else {
-            ESP_LOGE("EMAIL", "Failed to send email");
-        }
-
-        vTaskDelay(10000 / portTICK_PERIOD_MS);  // Delay before sending the next email
-    }
-    */
-}
-
-
 //Void API Porte
 void Task_Action_Porte(void *Parametre_Porte)
 {
@@ -188,16 +162,19 @@ void Task_Action_Porte(void *Parametre_Porte)
     if (ThePorte->Moteur_Porte.Sens==MOTEUR_OUVERTURE&&Position_Porte==PORTE_FERMEE)
         {
             ESP_LOGW(TAG_API,"API_Action_Porte->OUVERTURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,Position_Porte);
+            Poules_Mail_content ("API_Action_Porte","Ouverture de la porte") ;
             s_Mvt_Porte=0;
         }
     else  if (ThePorte->Moteur_Porte.Sens==MOTEUR_FERMETURE&&Position_Porte==PORTE_OUVERTE)
         {
             ESP_LOGW(TAG_API,"API_Action_Porte->FERMETURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,Position_Porte);
+            Poules_Mail_content ("API_Action_Porte","Fermeture de la porte") ;
             s_Mvt_Porte=0;
         }
     else
         {
             ESP_LOGW(TAG_API,"API_Action_Porte->FORCE OUVERTURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,Position_Porte);
+            Poules_Mail_content ("API_Action_Porte","Ouverture forcée de la porte") ;
             s_Mvt_Porte=0;
             ThePorte->Moteur_Porte.Sens=MOTEUR_OUVERTURE;
         }
@@ -251,11 +228,13 @@ void Task_Action_Porte(void *Parametre_Porte)
  
     action_moteur(&ThePorte->Moteur_Porte,MOTEUR_ARRET);
 
+    if (loopPorte== PORTE_TIMEOUT)
+        {Poules_Mail_content ("Task Porte","Time out Action porte");} 
+    Poules_Mail_content ("Task Porte - Position porte ",position_porte_texte(ThePorte->Porte_Position));
  
     //free(ThePorte);  
     vTaskDelete( NULL );
 }
-
 
 void Config_Struct_Porte(porte *myPorte)
 {
@@ -305,6 +284,45 @@ void Action_Porte(porte *myPorte,char*  action)
         Config_Struct_Porte(myPorteStatus); 
         ESP_LOGD(TAG_API, "Position de la Porte %d.\n", myPorteStatus->Porte_Position);
         action = position_porte_texte(myPorteStatus->Porte_Position);
+        Poules_Mail_content ("Statut_Porte",action) ;
         free(myPorteStatus);
         }
 }
+
+
+void Poules_Mail (message_mail *message) 
+{
+    Affiche_Mail_Content("0-Poules_Mail",message);
+    //while (1) {
+
+        xTaskCreate(&smtp_client_task, "send_email_task", 8192, message, 5, NULL);
+         
+        // Send the email
+        if (message->ack >= 0) {
+            ESP_LOGI("EMAIL", "Email sent successfully");
+        } else {
+            ESP_LOGE("EMAIL", "Failed to send email");
+        }
+
+        vTaskDelay(10000 / portTICK_PERIOD_MS);  // Delay before sending the next email
+    //}
+    
+    Affiche_Mail_Content("1-Poules_Mail",message);
+
+}
+
+void Poules_Mail_content (char *subject,char *body) 
+{
+    message_mail *Mymessage=NULL;
+    Mymessage = malloc(sizeof(message_mail)+4);
+       
+    strcpy(Mymessage->from,FROM_MAIL);
+    strcpy(Mymessage->to ,RECIPIENT_MAIL);
+    strcpy(Mymessage->subject ,subject);
+    strcpy(Mymessage->body ,body);
+    Mymessage->ack =-99;
+    Poules_Mail (Mymessage);
+    free(Mymessage);
+}
+
+

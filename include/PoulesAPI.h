@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "driver/gpio.h"
+//#include <PoulesMail.h>
 //Global
 
 
@@ -68,6 +69,8 @@ void action_moteur(moteur *Parametre_Moteur,int Sens_Rotation);
 void Task_Action_Porte(void *Parametre_Porte);
 void Config_Struct_Porte(porte *myPorte);
 void Action_Porte(porte *myPorte,char*  action);
+
+//void Poules_Mail (message_mail *message);
 
 int init_wifi();
 void connect_wifi();

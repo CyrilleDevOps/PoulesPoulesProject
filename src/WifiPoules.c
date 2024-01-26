@@ -61,7 +61,7 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
         }
 
         //test email
-        xTaskCreate(&smtp_client_task, "send_email_task", 4096, NULL, 5, NULL);
+        xTaskCreate(&smtp_client_task, "send_email_task", 8192, NULL, 5, NULL);
     }
 }
 

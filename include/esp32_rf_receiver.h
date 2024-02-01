@@ -62,6 +62,7 @@
         bool invertedSignal;
     } Protocol;
 
+
 int Config_receiver_rf433 (void);
 void receiver_rf433(void* pvParameter);
 

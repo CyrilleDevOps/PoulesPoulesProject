@@ -6,15 +6,20 @@
 #include "esp_wifi.h"
 #include "esp_event.h"
 #include "esp_http_server.h"
+#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
 #include "esp_log.h"
 #include <esp_sntp.h>
 
 #include <sys/param.h>
 #include "nvs_flash.h"
 
-#include <PoulesAPI.h>
-#include <PoulesTime.h>
-#include <PoulesMail.h>
+#include "PoulesTime.h"
+
+#include "PoulesAPI.h"
+#include "PoulesMail.h"
+
+int Porte_En_Action=0;
+
 
 static void initialize_sntp(void)
 {
@@ -56,7 +61,11 @@ static void initialize_sntp(void)
 
 // Function to be executed by the task
 void scheduled_task(void *pvParameter) 
-{
+{   
+
+    porte *ThePorte=NULL;
+    ThePorte = pvParameter;
+
     ESP_LOGI(TAG_SCHEDULE, "scheduled_task- Start " );
     ESP_LOGI(TAG_SCHEDULE, "task \n");
 
@@ -69,35 +78,53 @@ void scheduled_task(void *pvParameter)
         setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
         tzset();
         localtime_r(&now, &timeinfo);
+        
+        ESP_LOGD(TAG_SCHEDULE,"Position de la porte : % d - Porte en Action : %d - scheduled task  %d:%d:%d",ThePorte->Porte_Position,Porte_En_Action,timeinfo.tm_hour ,timeinfo.tm_min,timeinfo.tm_sec);
+        //Affiche_Struct_Porte(ThePorte); 
 
-
-        if ((timeinfo.tm_hour == HEURE_OUVERTURE && timeinfo.tm_min == HEURE_MINUTE_OUVERTURE))
-        {   ESP_LOGI(TAG_SCHEDULE, "Executing scheduled task every minute at 10s %d:%d:%d",timeinfo.tm_hour ,timeinfo.tm_min,timeinfo.tm_sec);
-            ESP_LOGD(TAG_SCHEDULE , "Debut*************************************\n");
-            Poules_Mail_content ("Scheduling_Porte","Ouverture") ;
-            porte *myPorte=NULL;
-            myPorte = malloc(sizeof(porte)+4);  
-            Config_Struct_Porte(myPorte);
-            if (myPorte->Porte_Position==PORTE_OUVERTE)
-                {action="ouvre";}
-            ESP_LOGD(TAG_SCHEDULE , "Fin ************************************\n");    
+        if (((timeinfo.tm_min > HEURE_MINUTE_OUVERTURE+5) || (timeinfo.tm_min > HEURE_MINUTE_FERMETURE+5)) && (Porte_En_Action==1))
+        //if ((timeinfo.tm_sec > HEURE_MINUTE_OUVERTURE+50) && (Porte_En_Action==1))
+        {
+          Porte_En_Action=0;  
+           ESP_LOGI(TAG_SCHEDULE , "Executing scheduled->Reset - Porte en Action : %d\n",Porte_En_Action); 
         }
-        if ((timeinfo.tm_hour == HEURE_FERMETURE && timeinfo.tm_min == HEURE_MINUTE_FERMETURE))
-        {   ESP_LOGI(TAG_SCHEDULE, "Executing scheduled task every minute at 10s %d:%d:%d",timeinfo.tm_hour ,timeinfo.tm_min,timeinfo.tm_sec);
-            ESP_LOGD(TAG_SCHEDULE , "Debut*************************************\n");
-            Poules_Mail_content ("Scheduling_Porte","Fermeture") ;
-            porte *myPorte=NULL;
-            myPorte = malloc(sizeof(porte)+4);  
-            Config_Struct_Porte(myPorte);
-            if (myPorte->Porte_Position==PORTE_FERMEE)
-                {action="ferme";}
+        
+        //if ((timeinfo.tm_hour == HEURE_OUVERTURE && timeinfo.tm_min == HEURE_MINUTE_OUVERTURE))
+        if ((timeinfo.tm_min == HEURE_MINUTE_OUVERTURE) && (Porte_En_Action==0))
+        //if ((timeinfo.tm_sec >= HEURE_MINUTE_OUVERTURE-3)&&(timeinfo.tm_sec <= HEURE_MINUTE_OUVERTURE+3))
+        {   ESP_LOGD(TAG_SCHEDULE, "Executing scheduled task every minute at 10s %d:%d:%d",timeinfo.tm_hour ,timeinfo.tm_min,timeinfo.tm_sec);
+            ESP_LOGD(TAG_SCHEDULE , "Debut*************************************\n");          
+            //ThePorte->Porte_Position=position_porte(ThePorte);
+            if (ThePorte->Porte_Position==PORTE_FERMEE||ThePorte->Porte_Position==PORTE_MILIEU)
+                {action="ouvre";
+                 Porte_En_Action=1;
+                 Poules_Mail_content ("Scheduling_Porte","Ouverture") ;
+                 Action_Porte(ThePorte,action);
+                }
             ESP_LOGD(TAG_SCHEDULE , "Fin ************************************\n");    
+            //free(myPorte);
+        }
+        //if ((timeinfo.tm_hour == HEURE_FERMETURE && timeinfo.tm_min == HEURE_MINUTE_FERMETURE))
+        if ((timeinfo.tm_min == HEURE_MINUTE_FERMETURE) && (Porte_En_Action==0))
+        //if ((timeinfo.tm_sec >= HEURE_MINUTE_FERMETURE-3)&&(timeinfo.tm_sec <= HEURE_MINUTE_FERMETURE+3))
+        {   ESP_LOGD(TAG_SCHEDULE, "Executing scheduled task every minute at 10s %d:%d:%d",timeinfo.tm_hour ,timeinfo.tm_min,timeinfo.tm_sec);
+            ESP_LOGD(TAG_SCHEDULE , "Debut*************************************\n");
+            //ThePorte->Porte_Position=position_porte(ThePorte);
+            if (ThePorte->Porte_Position==PORTE_OUVERTE)
+                {action="ferme";
+                 Porte_En_Action=1;
+                 Poules_Mail_content ("Scheduling_Porte","Fermeture") ;
+                }
+                Action_Porte(ThePorte,action);
+            ESP_LOGD(TAG_SCHEDULE , "Fin ************************************\n");    
+            //free(myPorte);
         }
          
         // ESP_LOGI(TAG, "Executing scheduled task every minute at 10s");
         // Delay for 1 second before checking again
        
         //vTaskDelay(pdMS_TO_TICKS(1000));
+        //printf("scheduled time :%d \n",timeinfo.tm_hour);
         vTaskDelay(3000/portTICK_PERIOD_MS);
     }
 }

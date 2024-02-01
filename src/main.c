@@ -1,25 +1,28 @@
 //
-#include <PoulesAPI.h>
-#include <PoulesTime.h>
+//#include <PoulesAPI.h>
+//#include <PoulesTime.h>
 #include <WifiPoules.h>
-#include <PoulesMail.h>
-#include <PoulesDashboard.h>
+//#include <PoulesMail.h>
+//#include <PoulesDashboard.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/event_groups.h"
+//#include "esp32_rf_receiver.h"
 
-#include "owb.h"
-#include "owb_rmt.h"
-#include "ds18b20.h"
+//#include "freertos/FreeRTOS.h"
+//#include "freertos/event_groups.h"
 
-#include "esp32_rf_receiver.h"
-#define LOG_LOCAL_LEVEL ESP_LOG_INFO
+//#include "owb.h"
+//#include "owb_rmt.h"
+//#include "ds18b20.h"
+
+
+#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
 #include "esp_log.h"
 #include "nvs_flash.h"
 
 
 #define TAG_MAIN "Start"
 
+/*
 void app_main_wifi()
 
 {   
@@ -44,7 +47,7 @@ void app_main_NOWIFI()
   printf("DEBUT*************************************\n");
   porte *myPorte=NULL;
   myPorte = malloc(sizeof(porte)+4);  
-  /*
+  /
     //Configure Porte   
       
     printf("Init  SizeOf : porte ->%d\n",sizeof(porte));
@@ -72,7 +75,7 @@ void app_main_NOWIFI()
      printf("myPorte.Sens_R2: %d \n",myPorte->Moteur_Porte.Sens);   
     printf("*************************************\n");
     
-    */
+    /
 
     Config_Struct_Porte(myPorte);
     xTaskCreate(Task_Action_Porte,"ACTION_PORTE",2048 ,myPorte,1,NULL);
@@ -101,18 +104,20 @@ printf("\nTemperature readings (degrees C) %.1f\n",readings);
 ds18b20_free(&Mydevices);
 owb_uninitialize(Myowb);
 
-/*
+//
 printf("Restarting now.\n");
 fflush(stdout);
 vTaskDelay(1000 / portTICK_PERIOD_MS);
 esp_restart();
-*/
+//
 }
+*/
 
 void app_main() //Receiver 433
 {
   int erreur_config_receiver=0;
-
+  
+  // free (myPorte);
   //esp_log_level_set(TAG_API, ESP_LOG_DEBUG);
   //esp_log_level_set(TAG_RF, ESP_LOG_WARN);
   //esp_log_level_set(TAG_MAIN, ESP_LOG_NONE);
@@ -127,17 +132,7 @@ void app_main() //Receiver 433
     if(init_wifi() == ESP_OK)
     {
         connect_wifi();
-    }
-
-  // initialize RF433 Receiver
-   ESP_LOGI(TAG_MAIN, "Configuration receiver\n");
-  erreur_config_receiver= Config_receiver_rf433 ();
-  ESP_LOGI(TAG_MAIN, "Configuration receiver : %d (0=erreur)\n",erreur_config_receiver);
-  if (erreur_config_receiver != 0)
-  {    
-    xTaskCreate(&receiver_rf433, "receiver_rf433", 2048, NULL, 3, NULL);
-  }
-    
+    } 
 
 }
 

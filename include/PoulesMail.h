@@ -2,6 +2,8 @@
 #define MAIL_SERVER "smtp.googlemail.com"
 #define MAIL_PORT "587"
 
+#define ACTIVE_MAIL 1
+
 
 
 #define SENDER_MAIL "cyrille.devops@gmail.com"

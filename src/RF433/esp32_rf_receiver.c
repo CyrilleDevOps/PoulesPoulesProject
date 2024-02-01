@@ -5,7 +5,7 @@
 
  */
 
-#include "esp32_rf_receiver.h"
+
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -19,8 +19,11 @@
 #include "output.h"
 #include "esp_timer.h"
 
-#include "PoulesAPI.h"
+//#include "PoulesAPI.h"
+#include "esp32_rf_receiver.h"
 #include "esp_log.h"
+
+#include "PoulesAPI.h"
 
 //#define ADVANCED_OUTPUT 1
 //#define TAG "RF433"
@@ -192,6 +195,11 @@ void receiver_rf433(void* pvParameter)
 {
   uint8_t prot_num = 0;
   unsigned Action=0;
+
+    porte *ThePorte=NULL;
+    //ThePorte = malloc(sizeof(porte)+4);
+    ThePorte = pvParameter;
+
   while(1)
   {
     if (xQueueReceive(s_esp_RF433_queue, &prot_num, portMAX_DELAY) == pdFALSE) {
@@ -203,27 +211,23 @@ void receiver_rf433(void* pvParameter)
   		ESP_LOGW(TAG_RF, "Received %lu / %dbit Protocol: %d.\n", getReceivedValue(), getReceivedBitlength(), prot_num);
       if (Action==1765432013)
       {
-        porte *myPorte=NULL;
-        myPorte = malloc(sizeof(porte)+4);  
-        Config_Struct_Porte(myPorte);   
-        myPorte->Moteur_Porte.Sens = MOTEUR_OUVERTURE;
-        ESP_LOGD(TAG_RF, "Ouvre Porte (0:Arret-1:Ouvre-2:Ferme/0:action): %d\n",myPorte->Moteur_Porte.Sens);
-        xTaskCreate(Task_Action_Porte,"ACTION_PORTE",2048 ,myPorte,1,NULL);    
+           
+        ThePorte->Moteur_Porte.Sens = MOTEUR_OUVERTURE;
+        ESP_LOGD(TAG_RF, "Ouvre Porte (0:Arret-1:Ouvre-2:Ferme/0:action): %d\n",ThePorte->Moteur_Porte.Sens);
+        xTaskCreate(Task_Action_Porte,"ACTION_PORTE",2048 ,ThePorte,1,NULL);    
 
       }
       else if (Action==2876543014)
-      {
-        porte *myPorte=NULL;
-        myPorte = malloc(sizeof(porte)+4);  
-        Config_Struct_Porte(myPorte);   
-        myPorte->Moteur_Porte.Sens = MOTEUR_FERMETURE;
-        ESP_LOGD(TAG_RF, "Ouvre Porte (0:Arret-1:Ouvre-2:Ferme/0:action): %d\n",myPorte->Moteur_Porte.Sens);
-        xTaskCreate(Task_Action_Porte,"ACTION_PORTE",2048 ,myPorte,1,NULL);    
+      {  
+        ThePorte->Moteur_Porte.Sens = MOTEUR_FERMETURE;
+        ESP_LOGD(TAG_RF, "Ouvre Porte (0:Arret-1:Ouvre-2:Ferme/0:action): %d\n",ThePorte->Moteur_Porte.Sens);
+        xTaskCreate(Task_Action_Porte,"ACTION_PORTE",2048 ,ThePorte,1,NULL);    
       }
       else if (Action==16736120)
       { porte *myPorteStatus=NULL;
         myPorteStatus = malloc(sizeof(porte)+4);  
         Config_Struct_Porte(myPorteStatus); 
+        position_porte (myPorteStatus );
         ESP_LOGD(TAG_RF, "Position de la Porte %d.\n", myPorteStatus->Porte_Position);
         free(myPorteStatus);
       }

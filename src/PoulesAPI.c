@@ -7,6 +7,7 @@
 
 #include "PoulesAPI.h"
 #include "PoulesMail.h"
+
 #include "esp_log.h"
 
 
@@ -16,7 +17,6 @@ void configure_Output(int Sortie)
     /* Set the GPIO as a push/pull output */
     gpio_set_direction(Sortie, GPIO_MODE_INPUT_OUTPUT);
 }
-
 
 void configure_Input(uint64_t  Parametre_pin_bit_mask)
 {               
@@ -152,7 +152,6 @@ void Task_Action_Porte(void *Parametre_Porte)
     
     ESP_LOGD(TAG_API,"API_Action_Porte->Action_Porte.Sens (0:Arret-1:Ouvre-2:Ferme/0:action): %d\n",ThePorte->Moteur_Porte.Sens);
     ESP_LOGD(TAG_API,"API_Action_Porte->myPorte.Moteur_Sens 1/2: %d->%d \n",ThePorte->Moteur_Porte.Relais_Sens1,ThePorte->Moteur_Porte.Relais_Sens2);
-    
     ESP_LOGV(TAG_API,"API_Action_Porte->myPorte.Moteur_Sens 1/2: %d->%d \n",ThePorte->Moteur_Porte.Relais_Sens1,ThePorte->Moteur_Porte.Relais_Sens2);
     ESP_LOGV(TAG_API,"API_Action_Porte->Action_Porte.Sens (0:Arret-1:Ouvre-2:Ferme/0:action): %d\n",ThePorte->Moteur_Porte.Sens);
     ESP_LOGV(TAG_API,"API_Action_Porte->myPorte.Moteur_Sens 1/2: %d->%d \n",ThePorte->Moteur_Porte.Relais_Sens1,ThePorte->Moteur_Porte.Relais_Sens2);
@@ -199,26 +198,26 @@ void Task_Action_Porte(void *Parametre_Porte)
         {    
             
             s_Mvt_Porte=!gpio_get_level(Capteur_Porte_Ouverte);
-            ESP_LOGW(TAG_API,"%d:o \n",loopPorte);
+            ESP_LOGD(TAG_API,"%d:o \n",loopPorte);
             ESP_LOGD(TAG_API,"API_Action_Porte->%d-Ouverture (Ouvre-> (0 : en mouvement/ 1 en alignement)): %d \n",loopPorte,s_Mvt_Porte);
         }
         else  if (ThePorte->Moteur_Porte.Sens==MOTEUR_FERMETURE)
         {
             
             s_Mvt_Porte=!gpio_get_level(Capteur_Porte_Fermee);
-            ESP_LOGW(TAG_API,"%d:f \n",loopPorte);
+            ESP_LOGD(TAG_API,"%d:f \n",loopPorte);
             ESP_LOGD(TAG_API,"API_Action_Porte->%d-Fermeture (Ferme->(0 : en mouvement/ 1 en alignement)): %d \n",loopPorte,s_Mvt_Porte);
         }
 
       if (s_Mvt_Porte==PORTE_ALIGNEMENT && alignePorte<PORTE_ALIGNE_CAPTEUR && loopPorte>=PORTE_LAG_CAPTEUR)
         {
            alignePorte++;
-           ESP_LOGW(TAG_API,"API_Action_Porte->Alignement ->%d",alignePorte);
+           ESP_LOGD(TAG_API,"API_Action_Porte->Alignement ->%d",alignePorte);
         }
         else if (s_Mvt_Porte==PORTE_ALIGNEMENT && alignePorte>=PORTE_ALIGNE_CAPTEUR)
         {
             s_Mvt_Porte=PORTE_REPOS;
-            ESP_LOGW(TAG_API,"API_Action_Porte->Fin du mouvement");
+            ESP_LOGD(TAG_API,"API_Action_Porte->Fin du mouvement");
         }
  
         action_moteur(&ThePorte->Moteur_Porte,ThePorte->Moteur_Porte.Sens);
@@ -230,41 +229,72 @@ void Task_Action_Porte(void *Parametre_Porte)
 
     if (loopPorte== PORTE_TIMEOUT)
         {Poules_Mail_content ("Task Porte","Time out Action porte");} 
-    Poules_Mail_content ("Task Porte - Position porte ",position_porte_texte(ThePorte->Porte_Position));
+    
+    Position_Porte=position_porte (ThePorte);
+    Poules_Mail_content ("Task Porte - Position porte ",position_porte_texte(Position_Porte));
  
     //free(ThePorte);  
     vTaskDelete( NULL );
 }
 
-void Config_Struct_Porte(porte *myPorte)
+void Init_Struct_Porte(porte *myPorte)
 {
-
-    ESP_LOGD(TAG_API,"Config_Struct_Porte-DEBUT*************************************\n");
+    ESP_LOGD(TAG_API,"Init_Struct_Porte-DEBUT*************************************\n");
     //Configure Porte   
-    uint64_t  Capteurs_myPorte = Capteurs_Porte;
-    configure_Input(Capteurs_myPorte);
     myPorte->Capteur_Ouverte=Capteur_Porte_Haut;
     myPorte->Capteur_Fermee=Capteur_Porte_Bas;
-    myPorte->Porte_Position=position_porte(myPorte);
+    //myPorte->Porte_Position=position_porte(myPorte);
+    myPorte->Porte_Position=PORTE_NON_DEFINIE;
 
     //Configure Moteur    
     myPorte->Moteur_Porte.Relais_Sens1 = Moteur_R1;
     myPorte->Moteur_Porte.Relais_Sens2 = Moteur_R2;
     myPorte->Moteur_Porte.Sens = MOTEUR_ARRET;
-    configure_moteur(&myPorte->Moteur_Porte);
     
-    ESP_LOGD(TAG_API,"Config_Struct_Porte->myPorte.Capteur_Ouverte : %d \n",myPorte->Capteur_Ouverte);
-    ESP_LOGD(TAG_API,"Config_Struct_Porte->myPorte.Capteur_Fermee: %d \n",myPorte->Capteur_Fermee);
-    ESP_LOGD(TAG_API,"Config_Struct_Porte->myPorte.Position: %d \n",myPorte->Porte_Position);
-    ESP_LOGD(TAG_API,"Config_Struct_Porte->myPorte.Moteur_R1: %d \n",myPorte->Moteur_Porte.Relais_Sens1);
-    ESP_LOGD(TAG_API,"Config_Struct_Porte->myPorte.Moteur_R2: %d \n",myPorte->Moteur_Porte.Relais_Sens2);
-    ESP_LOGD(TAG_API,"Config_Struct_Porte->myPorte.Sens_R2: %d \n",myPorte->Moteur_Porte.Sens);   
+    if (LOG_LOCAL_LEVEL==ESP_LOG_DEBUG)
+    {
+    Affiche_Struct_Porte(myPorte);    
+    }
+    ESP_LOGD(TAG_API,"Init_Struct_Porte-FIN*************************************\n");
+}
+
+void Affiche_Struct_Porte(porte *myPorte)
+{
+    printf("Config_Struct_Porte->myPorte.Capteur_Ouverte : %d \n",myPorte->Capteur_Ouverte);
+    printf("Config_Struct_Porte->myPorte.Capteur_Fermee: %d \n",myPorte->Capteur_Fermee);
+    printf("Config_Struct_Porte->myPorte.Position: %d \n",myPorte->Porte_Position);
+    printf("Config_Struct_Porte->myPorte.Moteur_R1: %d \n",myPorte->Moteur_Porte.Relais_Sens1);
+    printf("Config_Struct_Porte->myPorte.Moteur_R2: %d \n",myPorte->Moteur_Porte.Relais_Sens2);
+    printf("Config_Struct_Porte->myPorte.Sens_R2: %d \n",myPorte->Moteur_Porte.Sens);   
+}
+
+void Config_Struct_Porte(porte *myPorte)
+{
+    ESP_LOGD(TAG_API,"Config_Struct_Porte-DEBUT*************************************\n");
+    Init_Struct_Porte(myPorte);
+    
+    //Configure Porte   
+    uint64_t  Capteurs_myPorte = Capteurs_Porte;
+    configure_Input(Capteurs_myPorte);
+    //Configure Moteur    
+    configure_moteur(&myPorte->Moteur_Porte);
+
+    if (LOG_LOCAL_LEVEL==ESP_LOG_DEBUG)
+    {
+    Affiche_Struct_Porte(myPorte);    
+    }
     ESP_LOGD(TAG_API,"Config_Struct_Porte->Config_Struct_Porte-FIN*************************************\n");
 }
 
+
 void Action_Porte(porte *myPorte,char*  action)
 {
-        
+    ESP_LOGD(TAG_API , "Debut Action_Porte*******************************************\n");       
+    //if (LOG_LOCAL_LEVEL==ESP_LOG_DEBUG)
+    //{
+    Affiche_Struct_Porte(myPorte);    
+    //}
+            
     if (strcmp(action,"ouvre")==0 )         //Ouvre_Porte();
         { 
         myPorte->Moteur_Porte.Sens = MOTEUR_OUVERTURE;
@@ -282,17 +312,20 @@ void Action_Porte(porte *myPorte,char*  action)
         porte *myPorteStatus=NULL;
         myPorteStatus = malloc(sizeof(porte)+4);  
         Config_Struct_Porte(myPorteStatus); 
+        position_porte (myPorteStatus );
         ESP_LOGD(TAG_API, "Position de la Porte %d.\n", myPorteStatus->Porte_Position);
         action = position_porte_texte(myPorteStatus->Porte_Position);
         Poules_Mail_content ("Statut_Porte",action) ;
         free(myPorteStatus);
         }
+
+    ESP_LOGD(TAG_API , "FIN Action_Porte*******************************************\n");       
 }
 
 
 void Poules_Mail (message_mail *message) 
 {
-    Affiche_Mail_Content("0-Poules_Mail",message);
+    //Affiche_Mail_Content("0-Poules_Mail",message);
     //while (1) {
 
         xTaskCreate(&smtp_client_task, "send_email_task", 8192, message, 5, NULL);
@@ -307,12 +340,14 @@ void Poules_Mail (message_mail *message)
         vTaskDelay(10000 / portTICK_PERIOD_MS);  // Delay before sending the next email
     //}
     
-    Affiche_Mail_Content("1-Poules_Mail",message);
+    //Affiche_Mail_Content("1-Poules_Mail",message);
 
 }
 
 void Poules_Mail_content (char *subject,char *body) 
 {
+ if  (ACTIVE_MAIL)
+ {
     message_mail *Mymessage=NULL;
     Mymessage = malloc(sizeof(message_mail)+4);
        
@@ -323,6 +358,7 @@ void Poules_Mail_content (char *subject,char *body)
     Mymessage->ack =-99;
     Poules_Mail (Mymessage);
     free(Mymessage);
+ }
 }
 
 

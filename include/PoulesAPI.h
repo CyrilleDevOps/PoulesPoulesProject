@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "driver/gpio.h"
-//#include <PoulesMail.h>
+
+
 //Global
 
 
@@ -28,6 +29,7 @@
 #define  MOTEUR_FERMETURE   2
 
 //Declaration porte
+#define  PORTE_NON_DEFINIE  0
 #define  PORTE_OUVERTE   1
 #define  PORTE_FERMEE  2
 #define  PORTE_MILIEU  3
@@ -68,9 +70,11 @@ char *position_porte_texte(int PositionPorte);
 void action_moteur(moteur *Parametre_Moteur,int Sens_Rotation);
 void Task_Action_Porte(void *Parametre_Porte);
 void Config_Struct_Porte(porte *myPorte);
+void Init_Struct_Porte(porte *myPorte);
+void Affiche_Struct_Porte(porte *myPorte);
 void Action_Porte(porte *myPorte,char*  action);
 
 //void Poules_Mail (message_mail *message);
 
-int init_wifi();
-void connect_wifi();
+//int init_wifi();
+//void connect_wifi();

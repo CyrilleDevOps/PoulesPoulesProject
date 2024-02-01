@@ -11,12 +11,11 @@
 #include "nvs_flash.h"
 #include <sys/param.h>
 
-#include <PoulesAPI.h>
-#include <PoulesServer.h>
 
+#include "PoulesServer.h"
 
-
-
+#include "PoulesAPI.h"
+//extern porte *myPorte;
 int count=0;
 
 //static const char *TAG  = "PoulesPoules Wifi";
@@ -72,13 +71,12 @@ esp_err_t get_handler(httpd_req_t *req)
     }
 
     if (strcmp(action,"ouvre")==0 || strcmp(action,"ferme")==0 || strcmp(action,"statut")==0)
-    {  
-        count++;
+    {   count++;
         ESP_LOGD(TAG_WEB , "%d-Debut*************************************\n",count);
-        porte *myPorte=NULL;
-        myPorte = malloc(sizeof(porte)+4);  
-        Config_Struct_Porte(myPorte);   
-        Action_Porte(myPorte,action);
+        porte *myPorte2=NULL;
+        myPorte2 = malloc(sizeof(porte)+4);  
+        Init_Struct_Porte(myPorte2);
+        Action_Porte(myPorte2,action);
         ESP_LOGD(TAG_WEB , "%d-Fin ************************************\n",count);    
         char resp[] = "-It works!->";         // envoie une réponse   
         strcat(resp,action);

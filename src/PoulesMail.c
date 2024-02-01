@@ -32,6 +32,8 @@
 #include "PoulesMail.h"
 
 
+
+
 #define VALIDATE_MBEDTLS_RETURN(ret, min_valid_ret, max_valid_ret, goto_label)  \
     do {                                                                        \
         if (ret < min_valid_ret || ret > max_valid_ret) {                       \
@@ -200,7 +202,7 @@ static int perform_tls_handshake(mbedtls_ssl_context *ssl)
         goto exit;
     }
 
-    ESP_LOGI(TAG_MAIL, "Performing the SSL/TLS handshake...");
+    ESP_LOGD(TAG_MAIL, "Performing the SSL/TLS handshake...");
 
     fflush(stdout);
     while ((ret = mbedtls_ssl_handshake(ssl)) != 0) {
@@ -210,7 +212,7 @@ static int perform_tls_handshake(mbedtls_ssl_context *ssl)
         }
     }
 
-    ESP_LOGI(TAG_MAIL, "Verifying peer X.509 certificate...");
+    ESP_LOGD(TAG_MAIL, "Verifying peer X.509 certificate...");
 
     if ((flags = mbedtls_ssl_get_verify_result(ssl)) != 0) {
         /* In real life, we probably want to close connection if ret != 0 */
@@ -218,10 +220,10 @@ static int perform_tls_handshake(mbedtls_ssl_context *ssl)
         mbedtls_x509_crt_verify_info(buf, BUF_SIZE, "  ! ", flags);
         ESP_LOGW(TAG_MAIL, "verification info: %s", buf);
     } else {
-        ESP_LOGI(TAG_MAIL, "Certificate verified.");
+        ESP_LOGD(TAG_MAIL, "Certificate verified.");
     }
 
-    ESP_LOGI(TAG_MAIL, "Cipher suite is %s", mbedtls_ssl_get_ciphersuite(ssl));
+    ESP_LOGD(TAG_MAIL, "Cipher suite is %s", mbedtls_ssl_get_ciphersuite(ssl));
     ret = 0; /* No error */
 
 exit:
@@ -259,12 +261,12 @@ void smtp_client_task(void *Parametre_Mail)
     message_mail *TheMail=NULL;
     TheMail = Parametre_Mail;
   
-    Affiche_Mail_Content("1-smtp_client_task",TheMail);
+    //Affiche_Mail_Content("1-smtp_client_task",TheMail);
   
     mbedtls_ssl_init(&ssl);
     mbedtls_x509_crt_init(&cacert);
     mbedtls_ctr_drbg_init(&ctr_drbg);
-    ESP_LOGI(TAG_MAIL, "Seeding the random number generator");
+    ESP_LOGD(TAG_MAIL, "Seeding the random number generator");
 
     mbedtls_ssl_config_init(&conf);
 
@@ -275,7 +277,7 @@ void smtp_client_task(void *Parametre_Mail)
         goto exit;
     }
 
-    ESP_LOGI(TAG_MAIL, "Loading the CA root certificate...");
+    ESP_LOGD(TAG_MAIL, "Loading the CA root certificate...");
 
     ret = mbedtls_x509_crt_parse(&cacert, server_root_cert_pem_start,
                                  server_root_cert_pem_end - server_root_cert_pem_start);
@@ -285,7 +287,7 @@ void smtp_client_task(void *Parametre_Mail)
         goto exit;
     }
 
-    ESP_LOGI(TAG_MAIL, "Setting hostname for TLS session...");
+    ESP_LOGD(TAG_MAIL, "Setting hostname for TLS session...");
 
     /* Hostname set here should match CN in server certificate */
     if ((ret = mbedtls_ssl_set_hostname(&ssl, MAIL_SERVER)) != 0) {
@@ -293,7 +295,7 @@ void smtp_client_task(void *Parametre_Mail)
         goto exit;
     }
 
-    ESP_LOGI(TAG_MAIL, "Setting up the SSL/TLS structure...");
+    ESP_LOGD(TAG_MAIL, "Setting up the SSL/TLS structure...");
 
     if ((ret = mbedtls_ssl_config_defaults(&conf,
                                            MBEDTLS_SSL_IS_CLIENT,
@@ -314,7 +316,7 @@ void smtp_client_task(void *Parametre_Mail)
 
     mbedtls_net_init(&server_fd);
 
-    ESP_LOGI(TAG_MAIL, "Connecting to %s:%s...", MAIL_SERVER, MAIL_PORT);
+    ESP_LOGD(TAG_MAIL, "Connecting to %s:%s...", MAIL_SERVER, MAIL_PORT);
 
     if ((ret = mbedtls_net_connect(&server_fd, MAIL_SERVER,
                                    MAIL_PORT, MBEDTLS_NET_PROTO_TCP)) != 0) {
@@ -322,7 +324,7 @@ void smtp_client_task(void *Parametre_Mail)
         goto exit;
     }
 
-    ESP_LOGI(TAG_MAIL, "Connected.");
+    ESP_LOGD(TAG_MAIL, "Connected.");
 
     mbedtls_ssl_set_bio(&ssl, &server_fd, mbedtls_net_send, mbedtls_net_recv, NULL);
 
@@ -335,12 +337,12 @@ void smtp_client_task(void *Parametre_Mail)
     ret = write_and_get_response(&server_fd, (unsigned char *) buf, 0);
     VALIDATE_MBEDTLS_RETURN(ret, 200, 299, exit);
 
-    ESP_LOGI(TAG_MAIL, "Writing EHLO to server...");
+    ESP_LOGD(TAG_MAIL, "Writing EHLO to server...");
     len = snprintf((char *) buf, BUF_SIZE, "EHLO %s\r\n", "ESP32");
     ret = write_and_get_response(&server_fd, (unsigned char *) buf, len);
     VALIDATE_MBEDTLS_RETURN(ret, 200, 299, exit);
 
-    ESP_LOGI(TAG_MAIL, "Writing STARTTLS to server...");
+    ESP_LOGD(TAG_MAIL, "Writing STARTTLS to server...");
     len = snprintf((char *) buf, BUF_SIZE, "STARTTLS\r\n");
     ret = write_and_get_response(&server_fd, (unsigned char *) buf, len);
     VALIDATE_MBEDTLS_RETURN(ret, 200, 299, exit);
@@ -351,14 +353,14 @@ void smtp_client_task(void *Parametre_Mail)
     }
 
     /* Authentication */
-    ESP_LOGI(TAG_MAIL, "Authentication...");
+    ESP_LOGD(TAG_MAIL, "Authentication...");
 
-    ESP_LOGI(TAG_MAIL, "Write AUTH LOGIN");
+    ESP_LOGD(TAG_MAIL, "Write AUTH LOGIN");
     len = snprintf( (char *) buf, BUF_SIZE, "AUTH LOGIN\r\n" );
     ret = write_ssl_and_get_response(&ssl, (unsigned char *) buf, len);
     VALIDATE_MBEDTLS_RETURN(ret, 200, 399, exit);
 
-    ESP_LOGI(TAG_MAIL, "Write USER NAME");
+    ESP_LOGD(TAG_MAIL, "Write USER NAME");
     ret = mbedtls_base64_encode((unsigned char *) base64_buffer, sizeof(base64_buffer),
                                 &base64_len, (unsigned char *) SENDER_MAIL, strlen(SENDER_MAIL));
     if (ret != 0) {
@@ -369,7 +371,7 @@ void smtp_client_task(void *Parametre_Mail)
     ret = write_ssl_and_get_response(&ssl, (unsigned char *) buf, len);
     VALIDATE_MBEDTLS_RETURN(ret, 300, 399, exit);
 
-    ESP_LOGI(TAG_MAIL, "Write PASSWORD");
+    ESP_LOGD(TAG_MAIL, "Write PASSWORD");
     ret = mbedtls_base64_encode((unsigned char *) base64_buffer, sizeof(base64_buffer),
                                 &base64_len, (unsigned char *) SENDER_PASSWORD, strlen(SENDER_PASSWORD));
    if (ret != 0) {
@@ -381,26 +383,26 @@ void smtp_client_task(void *Parametre_Mail)
     VALIDATE_MBEDTLS_RETURN(ret, 200, 399, exit);
     
     /* Compose email */
-    ESP_LOGI(TAG_MAIL, "Write MAIL FROM");
+    ESP_LOGD(TAG_MAIL, "Write MAIL FROM");
     len = snprintf((char *) buf, BUF_SIZE, "MAIL FROM:<%s>\r\n", SENDER_MAIL);
     ret = write_ssl_and_get_response(&ssl, (unsigned char *) buf, len);
     VALIDATE_MBEDTLS_RETURN(ret, 200, 299, exit);
 
 
 
-    ESP_LOGI(TAG_MAIL, "Write RCPT");
+    ESP_LOGD(TAG_MAIL, "Write RCPT");
     len = snprintf((char *) buf, BUF_SIZE, "RCPT TO:<%s>\r\n", TheMail->to);
     ESP_LOGD(TAG_MAIL, "1-Sent_Mail->Mymessage->to =%s\n",buf);
 
     ret = write_ssl_and_get_response(&ssl, (unsigned char *) buf, len);
     VALIDATE_MBEDTLS_RETURN(ret, 200, 299, exit);
 
-    ESP_LOGI(TAG_MAIL, "Write DATA");
+    ESP_LOGD(TAG_MAIL, "Write DATA");
     len = snprintf((char *) buf, BUF_SIZE, "DATA\r\n");
     ret = write_ssl_and_get_response(&ssl, (unsigned char *) buf, len);
     VALIDATE_MBEDTLS_RETURN(ret, 300, 399, exit);
 
-    ESP_LOGI(TAG_MAIL, "Write Content");
+    ESP_LOGD(TAG_MAIL, "Write Content");
     len = snprintf((char *) buf, BUF_SIZE,
                    "From: %s\r\nSubject: %s\r\n"
                    "To: %s\r\n"
@@ -425,7 +427,7 @@ void smtp_client_task(void *Parametre_Mail)
     len = snprintf((char *) buf, BUF_SIZE, "\r\n.\r\n");
     ret = write_ssl_and_get_response(&ssl, (unsigned char *) buf, len);
     VALIDATE_MBEDTLS_RETURN(ret, 200, 399, exit);
-    ESP_LOGI(TAG_MAIL, "Email sent!");
+    ESP_LOGD(TAG_MAIL, "Email sent!");
 
     /* Close connection */
     mbedtls_ssl_close_notify(&ssl);

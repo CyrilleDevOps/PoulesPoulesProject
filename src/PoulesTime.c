@@ -91,8 +91,8 @@ void scheduled_task(void *pvParameter)
            ESP_LOGD(TAG_SCHEDULE , "Executing scheduled->Reset - Porte en Action : %d\n",Porte_En_Action); 
         }
         
-        //if ((timeinfo.tm_hour == HEURE_OUVERTURE && timeinfo.tm_min == HEURE_MINUTE_OUVERTURE))
-        if ((timeinfo.tm_min== 6 ||
+        if ((timeinfo.tm_hour == HEURE_OUVERTURE && timeinfo.tm_min == HEURE_MINUTE_OUVERTURE) && (Porte_En_Action==0))
+        /* if ((timeinfo.tm_min== 6 ||
              timeinfo.tm_min== 12 ||
              timeinfo.tm_min== 18||
              timeinfo.tm_min== 24 ||
@@ -101,6 +101,7 @@ void scheduled_task(void *pvParameter)
              timeinfo.tm_min== 42||
              timeinfo.tm_min== 48 ||
              timeinfo.tm_min== 54 ) && (Porte_En_Action==0))
+        */
         //if ((timeinfo.tm_sec >= HEURE_MINUTE_OUVERTURE-3)&&(timeinfo.tm_sec <= HEURE_MINUTE_OUVERTURE+3))
         {   
             Porte_En_Action= timeinfo.tm_min;
@@ -115,8 +116,8 @@ void scheduled_task(void *pvParameter)
             ESP_LOGD(TAG_SCHEDULE , "Fin ************************************\n");    
             //free(myPorte);
         }
-        //if ((timeinfo.tm_hour == HEURE_FERMETURE && timeinfo.tm_min == HEURE_MINUTE_FERMETURE))
-         if ((timeinfo.tm_min== 3 ||
+        if ((timeinfo.tm_hour == HEURE_FERMETURE && timeinfo.tm_min == HEURE_MINUTE_FERMETURE) && (Porte_En_Action==0))
+        /* if ((timeinfo.tm_min== 3 ||
              timeinfo.tm_min== 9 ||
              timeinfo.tm_min== 15 ||
              timeinfo.tm_min== 21||
@@ -125,6 +126,7 @@ void scheduled_task(void *pvParameter)
              timeinfo.tm_min== 39 ||
              timeinfo.tm_min== 45||
              timeinfo.tm_min== 51  ) && (Porte_En_Action==0))
+        */
         //if ((timeinfo.tm_sec >= HEURE_MINUTE_FERMETURE-3)&&(timeinfo.tm_sec <= HEURE_MINUTE_FERMETURE+3))
         {   
             Porte_En_Action= timeinfo.tm_min;

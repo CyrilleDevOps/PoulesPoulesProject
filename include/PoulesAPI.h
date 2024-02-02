@@ -5,7 +5,7 @@
 //Global
 
 
-
+#define MODE_SIMU 0
 #define TAG_API "API"
 
 
@@ -62,6 +62,7 @@ struct struct_porte {
 
  typedef  struct struct_porte porte;
 
+void blink_led(int Led, int led_state);
 void configure_Output(int Sortie);
 void configure_moteur(moteur *Parametre_Moteur);
 void configure_Input(uint64_t  Parametre_pin_bit_mask);

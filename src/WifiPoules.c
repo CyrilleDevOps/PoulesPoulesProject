@@ -53,11 +53,15 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
         myPorte = malloc(sizeof(porte)+4);  
         Config_Struct_Porte(myPorte);
         myPorte->Porte_Position=position_porte (myPorte);
-        Affiche_Struct_Porte(myPorte); 
+        if ( MODE_SIMU==1)
+            {   blink_led(Led_Ouverte,1);
+                blink_led(Led_Fermee,0);
+            }
+        //Affiche_Struct_Porte(myPorte); 
         ESP_LOGI(TAG_WIFI , "Adresse IP : " IPSTR, IP2STR(&event->ip_info.ip));
         obtain_time();
         ESP_LOGI(TAG_SCHEDULE, "Start " );
-        erreur_config_receiver= xTaskCreate(&scheduled_task, "ScheduledTask", 4096, myPorte, 5, NULL);
+        erreur_config_receiver= xTaskCreate(&scheduled_task, "ScheduledTask", 12288, myPorte, 5, NULL);
         if (erreur_config_receiver != 0)
         {    
             ESP_LOGI(TAG_SCHEDULE, "Task Ok " );

@@ -30,10 +30,10 @@ void configure_Input(uint64_t  Parametre_pin_bit_mask)
 	gpio_config(&Parametre_Pin_Input);
 }
 
-static void blink_led(int Led, int led_state)
+ void blink_led(int Led, int led_state)
 {
     /* Set the GPIO level according to the state (LOW or HIGH)*/
-    printf("Allume Led : %d/%d->%d \n",Led, gpio_get_level(Led),led_state);
+    ESP_LOGD(TAG_API,"Allume Led : %d/%d->%d \n",Led, gpio_get_level(Led),led_state);
     gpio_set_level(Led, led_state);
 }
 
@@ -52,21 +52,21 @@ int position_porte (void *Parametre_porte )
     
     if (s_Porte_Ouverte==0 && s_Porte_Fermee==1)
     {
-     ESP_LOGW(TAG_API,"position_porte->OUVERTE : %d/%d \n",s_Porte_Ouverte,s_Porte_Fermee);
+     ESP_LOGD(TAG_API,"position_porte->OUVERTE : %d/%d \n",s_Porte_Ouverte,s_Porte_Fermee);
      blink_led(Led2_Porte_Ouverte,1);
      blink_led(Led1_Porte_Fermee,0);
      return (PORTE_OUVERTE);
     }
     else if (s_Porte_Ouverte==1 && s_Porte_Fermee==0)
     {
-      ESP_LOGW(TAG_API,"position_porte->FERMEE : %d/%d \n",s_Porte_Ouverte,s_Porte_Fermee);
+      ESP_LOGD(TAG_API,"position_porte->FERMEE : %d/%d \n",s_Porte_Ouverte,s_Porte_Fermee);
       blink_led(Led2_Porte_Ouverte,0);
       blink_led(Led1_Porte_Fermee,1);
       return (PORTE_FERMEE);
     }
     else if (s_Porte_Ouverte==1 && s_Porte_Fermee==1)
     {
-      ESP_LOGW(TAG_API,"position_porte->AU MILIEU : %d/%d \n",s_Porte_Ouverte,s_Porte_Fermee);
+      ESP_LOGD(TAG_API,"position_porte->AU MILIEU : %d/%d \n",s_Porte_Ouverte,s_Porte_Fermee);
       blink_led(Led2_Porte_Ouverte,0);
       blink_led(Led1_Porte_Fermee,0);
       return (PORTE_MILIEU);
@@ -141,6 +141,8 @@ void Task_Action_Porte(void *Parametre_Porte)
 
     int s_Mvt_Porte = PORTE_REPOS; 
     int Capteur_Porte_Ouverte, Capteur_Porte_Fermee,Position_Porte;  
+    int Led1_Porte_Fermee= Led_Fermee;
+    int Led2_Porte_Ouverte=Led_Ouverte;
     
     porte *ThePorte=NULL;
     //ThePorte = malloc(sizeof(porte)+4);
@@ -160,19 +162,19 @@ void Task_Action_Porte(void *Parametre_Porte)
 
     if (ThePorte->Moteur_Porte.Sens==MOTEUR_OUVERTURE&&Position_Porte==PORTE_FERMEE)
         {
-            ESP_LOGW(TAG_API,"API_Action_Porte->OUVERTURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,Position_Porte);
+            ESP_LOGI(TAG_API,"API_Action_Porte->OUVERTURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,Position_Porte);
             Poules_Mail_content ("API_Action_Porte","Ouverture de la porte") ;
             s_Mvt_Porte=0;
         }
     else  if (ThePorte->Moteur_Porte.Sens==MOTEUR_FERMETURE&&Position_Porte==PORTE_OUVERTE)
         {
-            ESP_LOGW(TAG_API,"API_Action_Porte->FERMETURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,Position_Porte);
+            ESP_LOGI(TAG_API,"API_Action_Porte->FERMETURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,Position_Porte);
             Poules_Mail_content ("API_Action_Porte","Fermeture de la porte") ;
             s_Mvt_Porte=0;
         }
     else
         {
-            ESP_LOGW(TAG_API,"API_Action_Porte->FORCE OUVERTURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,Position_Porte);
+            ESP_LOGI(TAG_API,"API_Action_Porte->FORCE OUVERTURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,Position_Porte);
             Poules_Mail_content ("API_Action_Porte","Ouverture forcée de la porte") ;
             s_Mvt_Porte=0;
             ThePorte->Moteur_Porte.Sens=MOTEUR_OUVERTURE;
@@ -200,6 +202,10 @@ void Task_Action_Porte(void *Parametre_Porte)
             s_Mvt_Porte=!gpio_get_level(Capteur_Porte_Ouverte);
             ESP_LOGD(TAG_API,"%d:o \n",loopPorte);
             ESP_LOGD(TAG_API,"API_Action_Porte->%d-Ouverture (Ouvre-> (0 : en mouvement/ 1 en alignement)): %d \n",loopPorte,s_Mvt_Porte);
+            if (loopPorte==10 && MODE_SIMU==1)
+            {   blink_led(Led2_Porte_Ouverte,1);
+                blink_led(Led1_Porte_Fermee,0);
+            }
         }
         else  if (ThePorte->Moteur_Porte.Sens==MOTEUR_FERMETURE)
         {
@@ -207,6 +213,10 @@ void Task_Action_Porte(void *Parametre_Porte)
             s_Mvt_Porte=!gpio_get_level(Capteur_Porte_Fermee);
             ESP_LOGD(TAG_API,"%d:f \n",loopPorte);
             ESP_LOGD(TAG_API,"API_Action_Porte->%d-Fermeture (Ferme->(0 : en mouvement/ 1 en alignement)): %d \n",loopPorte,s_Mvt_Porte);
+            if (loopPorte==10 && MODE_SIMU==1)
+            {   blink_led(Led2_Porte_Ouverte,0);
+                blink_led(Led1_Porte_Fermee,1);
+            }
         }
 
       if (s_Mvt_Porte==PORTE_ALIGNEMENT && alignePorte<PORTE_ALIGNE_CAPTEUR && loopPorte>=PORTE_LAG_CAPTEUR)
@@ -235,6 +245,93 @@ void Task_Action_Porte(void *Parametre_Porte)
  
     //free(ThePorte);  
     vTaskDelete( NULL );
+}
+
+//Void API Porte
+void Actioner_Porte(porte *ThePorte)
+{
+    ESP_LOGD(TAG_API,"Actioner Porte début /n");
+    int s_Mvt_Porte = PORTE_REPOS; 
+    int Led1_Porte_Fermee= Led_Fermee;
+    int Led2_Porte_Ouverte=Led_Ouverte;
+
+    ESP_LOGI(TAG_API,"Debut actionner Porte Sens: %d / Position :%d \n",ThePorte->Moteur_Porte.Sens,ThePorte->Porte_Position);
+ 
+    if (ThePorte->Moteur_Porte.Sens==MOTEUR_OUVERTURE && ThePorte->Porte_Position==PORTE_FERMEE)
+        {
+            ESP_LOGD(TAG_API,"API_Action_Porte->OUVERTURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,ThePorte->Porte_Position);
+            Poules_Mail_content ("API_Action_Porte","Ouverture de la porte") ;
+            s_Mvt_Porte=0;
+        }
+    else  if (ThePorte->Moteur_Porte.Sens==MOTEUR_FERMETURE&& ThePorte->Porte_Position ==PORTE_OUVERTE)
+        {
+            ESP_LOGD(TAG_API,"API_Action_Porte->FERMETURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,ThePorte->Porte_Position);
+            Poules_Mail_content ("API_Action_Porte","Fermeture de la porte") ;
+            s_Mvt_Porte=0;
+        }
+    else
+        {
+            ESP_LOGD(TAG_API,"API_Action_Porte->FORCE OUVERTURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,ThePorte->Porte_Position);
+            Poules_Mail_content ("API_Action_Porte","Ouverture forcée de la porte") ;
+            s_Mvt_Porte=0;
+            ThePorte->Moteur_Porte.Sens=MOTEUR_OUVERTURE;
+        }
+   
+    int loopPorte=0;
+    int alignePorte = 0;
+
+    while ((s_Mvt_Porte==PORTE_EN_MVT || s_Mvt_Porte==PORTE_ALIGNEMENT) && loopPorte< PORTE_TIMEOUT )
+    {   
+        ESP_LOGV(TAG_API,"API_Action_Porte->%d-myPorte.Capteur_Ouverte : %d->%d \n",loopPorte,ThePorte->Capteur_Ouverte,gpio_get_level(ThePorte->Capteur_Ouverte));
+        ESP_LOGV(TAG_API,"API_Action_Porte->%d-myPorte.Capteur_Fermee: %d->%d \n",loopPorte,ThePorte->Capteur_Fermee,gpio_get_level(ThePorte->Capteur_Fermee));
+        if (ThePorte->Moteur_Porte.Sens==MOTEUR_OUVERTURE)
+        {    
+            
+            s_Mvt_Porte=!gpio_get_level(ThePorte->Capteur_Ouverte);
+            ESP_LOGD(TAG_API,"%d:o \n",loopPorte);
+            ESP_LOGD(TAG_API,"API_Action_Porte->%d-Ouverture (Ouvre-> (0 : en mouvement/ 1 en alignement)): %d \n",loopPorte,s_Mvt_Porte);
+            if (loopPorte==10 && MODE_SIMU==1)
+            {   blink_led(Led2_Porte_Ouverte,1);
+                blink_led(Led1_Porte_Fermee,0);
+            }
+        }
+        else  if (ThePorte->Moteur_Porte.Sens==MOTEUR_FERMETURE)
+        {
+            
+            s_Mvt_Porte=!gpio_get_level(ThePorte->Capteur_Fermee);
+            ESP_LOGD(TAG_API,"%d:f \n",loopPorte);
+            ESP_LOGD(TAG_API,"API_Action_Porte->%d-Fermeture (Ferme->(0 : en mouvement/ 1 en alignement)): %d \n",loopPorte,s_Mvt_Porte);
+            if (loopPorte==10 && MODE_SIMU==1)
+            {   blink_led(Led2_Porte_Ouverte,0);
+                blink_led(Led1_Porte_Fermee,1);
+            }
+        }
+
+      if (s_Mvt_Porte==PORTE_ALIGNEMENT && alignePorte<PORTE_ALIGNE_CAPTEUR && loopPorte>=PORTE_LAG_CAPTEUR)
+        {
+           alignePorte++;
+           ESP_LOGD(TAG_API,"API_Action_Porte->Alignement ->%d",alignePorte);
+        }
+        else if (s_Mvt_Porte==PORTE_ALIGNEMENT && alignePorte>=PORTE_ALIGNE_CAPTEUR)
+        {
+            s_Mvt_Porte=PORTE_REPOS;
+            ESP_LOGD(TAG_API,"API_Action_Porte->Fin du mouvement");
+        }
+ 
+        action_moteur(&ThePorte->Moteur_Porte,ThePorte->Moteur_Porte.Sens);
+        vTaskDelay(1000/portTICK_PERIOD_MS);
+        loopPorte++;
+    } 
+ 
+    action_moteur(&ThePorte->Moteur_Porte,MOTEUR_ARRET);
+
+    if (loopPorte== PORTE_TIMEOUT)
+        {Poules_Mail_content ("Task Porte","Time out Action porte");} 
+    
+    ThePorte->Porte_Position=position_porte (ThePorte);
+    Poules_Mail_content ("Task Porte - Position porte ",position_porte_texte(ThePorte->Porte_Position));
+ 
+    //free(ThePorte);  
 }
 
 void Init_Struct_Porte(porte *myPorte)
@@ -290,33 +387,30 @@ void Config_Struct_Porte(porte *myPorte)
 void Action_Porte(porte *myPorte,char*  action)
 {
     ESP_LOGD(TAG_API , "Debut Action_Porte*******************************************\n");       
-    //if (LOG_LOCAL_LEVEL==ESP_LOG_DEBUG)
-    //{
+    if (LOG_LOCAL_LEVEL==ESP_LOG_DEBUG)
+    {
     Affiche_Struct_Porte(myPorte);    
-    //}
+    }
             
     if (strcmp(action,"ouvre")==0 )         //Ouvre_Porte();
         { 
         myPorte->Moteur_Porte.Sens = MOTEUR_OUVERTURE;
-        ESP_LOGD(TAG_API , "Ouvre Porte (0:Arret-1:Ouvre-2:Ferme/0:action): %d\n",myPorte->Moteur_Porte.Sens);
-        xTaskCreate(Task_Action_Porte,"ACTION_PORTE",2048 ,myPorte,1,NULL);      
+        ESP_LOGI(TAG_API , "ACTION_Porte->Position de la Porte %s -Ouvre Porte (0:Arret-1:Ouvre-2:Ferme/0:action) : %d\n", position_porte_texte(myPorte->Porte_Position),myPorte->Moteur_Porte.Sens);
+        //xTaskCreate(Task_Action_Porte,"ACTION_PORTE",2048 ,myPorte,1,NULL);      
+        Actioner_Porte (myPorte);
         }
-         else if (strcmp(action,"ferme")==0 )    //Ferme_Porte();
+    else if (strcmp(action,"ferme")==0 )    //Ferme_Porte();
         {   
         myPorte->Moteur_Porte.Sens = MOTEUR_FERMETURE;
-        ESP_LOGD(TAG_API , "Ferme Porte (0:Arret-1:Ouvre-2:Ferme/0:action): %d\n",myPorte->Moteur_Porte.Sens);
-        xTaskCreate(Task_Action_Porte,"ACTION_PORTE",2048 ,myPorte,1,NULL);
+        ESP_LOGI(TAG_API , "ACTION_Porte->Position de la Porte %s - Ferme Porte (0:Arret-1:Ouvre-2:Ferme/0:action): %d\n", position_porte_texte(myPorte->Porte_Position),myPorte->Moteur_Porte.Sens);
+        //xTaskCreate(Task_Action_Porte,"ACTION_PORTE",2048 ,myPorte,1,NULL);
+        Actioner_Porte (myPorte);
         }  
-        else if (strcmp(action,"statut")==0 )    //Ferme_Porte();
+    else if (strcmp(action,"statut")==0 )    //Ferme_Porte();
         {
-        porte *myPorteStatus=NULL;
-        myPorteStatus = malloc(sizeof(porte)+4);  
-        Config_Struct_Porte(myPorteStatus); 
-        position_porte (myPorteStatus );
-        ESP_LOGD(TAG_API, "Position de la Porte %d.\n", myPorteStatus->Porte_Position);
-        action = position_porte_texte(myPorteStatus->Porte_Position);
+        ESP_LOGD(TAG_API, "ACTION_Porte->Position de la Porte %d.\n", myPorte->Porte_Position);
+        action = position_porte_texte(myPorte->Porte_Position);
         Poules_Mail_content ("Statut_Porte",action) ;
-        free(myPorteStatus);
         }
 
     ESP_LOGD(TAG_API , "FIN Action_Porte*******************************************\n");       

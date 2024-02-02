@@ -18,7 +18,7 @@
 #include "PoulesAPI.h"
 #include "PoulesMail.h"
 
-int Porte_En_Action=0;
+static int Porte_En_Action=0;
 
 
 static void initialize_sntp(void)
@@ -81,23 +81,34 @@ void scheduled_task(void *pvParameter)
         
         ESP_LOGD(TAG_SCHEDULE,"Position de la porte : % d - Porte en Action : %d - scheduled task  %d:%d:%d",ThePorte->Porte_Position,Porte_En_Action,timeinfo.tm_hour ,timeinfo.tm_min,timeinfo.tm_sec);
         //Affiche_Struct_Porte(ThePorte); 
-
-        if (((timeinfo.tm_min > HEURE_MINUTE_OUVERTURE+5) || (timeinfo.tm_min > HEURE_MINUTE_FERMETURE+5)) && (Porte_En_Action==1))
+        int condition_reset = 0;
+        condition_reset = timeinfo.tm_min-Porte_En_Action;
+        if ((Porte_En_Action!=0) && (condition_reset >=2 ))
+        //if (((timeinfo.tm_min > HEURE_MINUTE_OUVERTURE+5) || (timeinfo.tm_min > HEURE_MINUTE_FERMETURE+5)) && (Porte_En_Action==1))
         //if ((timeinfo.tm_sec > HEURE_MINUTE_OUVERTURE+50) && (Porte_En_Action==1))
         {
           Porte_En_Action=0;  
-           ESP_LOGI(TAG_SCHEDULE , "Executing scheduled->Reset - Porte en Action : %d\n",Porte_En_Action); 
+           ESP_LOGD(TAG_SCHEDULE , "Executing scheduled->Reset - Porte en Action : %d\n",Porte_En_Action); 
         }
         
         //if ((timeinfo.tm_hour == HEURE_OUVERTURE && timeinfo.tm_min == HEURE_MINUTE_OUVERTURE))
-        if ((timeinfo.tm_min == HEURE_MINUTE_OUVERTURE) && (Porte_En_Action==0))
+        if ((timeinfo.tm_min== 6 ||
+             timeinfo.tm_min== 12 ||
+             timeinfo.tm_min== 18||
+             timeinfo.tm_min== 24 ||
+             timeinfo.tm_min== 30 ||
+             timeinfo.tm_min== 36 ||
+             timeinfo.tm_min== 42||
+             timeinfo.tm_min== 48 ||
+             timeinfo.tm_min== 54 ) && (Porte_En_Action==0))
         //if ((timeinfo.tm_sec >= HEURE_MINUTE_OUVERTURE-3)&&(timeinfo.tm_sec <= HEURE_MINUTE_OUVERTURE+3))
-        {   ESP_LOGD(TAG_SCHEDULE, "Executing scheduled task every minute at 10s %d:%d:%d",timeinfo.tm_hour ,timeinfo.tm_min,timeinfo.tm_sec);
+        {   
+            Porte_En_Action= timeinfo.tm_min;
+            ESP_LOGI(TAG_SCHEDULE, "Executing scheduled task OUVRE Position de la porte : % d - Porte en Action : %d - scheduled task  %d:%d:%d",ThePorte->Porte_Position,Porte_En_Action,timeinfo.tm_hour ,timeinfo.tm_min,timeinfo.tm_sec);
             ESP_LOGD(TAG_SCHEDULE , "Debut*************************************\n");          
             //ThePorte->Porte_Position=position_porte(ThePorte);
             if (ThePorte->Porte_Position==PORTE_FERMEE||ThePorte->Porte_Position==PORTE_MILIEU)
                 {action="ouvre";
-                 Porte_En_Action=1;
                  Poules_Mail_content ("Scheduling_Porte","Ouverture") ;
                  Action_Porte(ThePorte,action);
                 }
@@ -105,14 +116,23 @@ void scheduled_task(void *pvParameter)
             //free(myPorte);
         }
         //if ((timeinfo.tm_hour == HEURE_FERMETURE && timeinfo.tm_min == HEURE_MINUTE_FERMETURE))
-        if ((timeinfo.tm_min == HEURE_MINUTE_FERMETURE) && (Porte_En_Action==0))
+         if ((timeinfo.tm_min== 3 ||
+             timeinfo.tm_min== 9 ||
+             timeinfo.tm_min== 15 ||
+             timeinfo.tm_min== 21||
+             timeinfo.tm_min== 27 ||
+             timeinfo.tm_min== 33 ||
+             timeinfo.tm_min== 39 ||
+             timeinfo.tm_min== 45||
+             timeinfo.tm_min== 51  ) && (Porte_En_Action==0))
         //if ((timeinfo.tm_sec >= HEURE_MINUTE_FERMETURE-3)&&(timeinfo.tm_sec <= HEURE_MINUTE_FERMETURE+3))
-        {   ESP_LOGD(TAG_SCHEDULE, "Executing scheduled task every minute at 10s %d:%d:%d",timeinfo.tm_hour ,timeinfo.tm_min,timeinfo.tm_sec);
+        {   
+            Porte_En_Action= timeinfo.tm_min;
+            ESP_LOGI(TAG_SCHEDULE, "Executing scheduled task FERME Position de la porte : % d - Porte en Action : %d - scheduled task  %d:%d:%d",ThePorte->Porte_Position,Porte_En_Action,timeinfo.tm_hour ,timeinfo.tm_min,timeinfo.tm_sec);
             ESP_LOGD(TAG_SCHEDULE , "Debut*************************************\n");
             //ThePorte->Porte_Position=position_porte(ThePorte);
             if (ThePorte->Porte_Position==PORTE_OUVERTE)
                 {action="ferme";
-                 Porte_En_Action=1;
                  Poules_Mail_content ("Scheduling_Porte","Fermeture") ;
                 }
                 Action_Porte(ThePorte,action);

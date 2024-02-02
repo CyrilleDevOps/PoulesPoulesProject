@@ -76,10 +76,11 @@ esp_err_t get_handler(httpd_req_t *req)
         porte *myPorte2=NULL;
         myPorte2 = malloc(sizeof(porte)+4);  
         Init_Struct_Porte(myPorte2);
+        myPorte2->Porte_Position=position_porte (myPorte2);
         Action_Porte(myPorte2,action);
         ESP_LOGD(TAG_WEB , "%d-Fin ************************************\n",count);    
         char resp[] = "-It works!->";         // envoie une réponse   
-        strcat(resp,action);
+        strcat(resp,position_porte_texte( myPorte2->Porte_Position));
         httpd_resp_send(req, resp, HTTPD_RESP_USE_STRLEN);
     }
     return ESP_OK;

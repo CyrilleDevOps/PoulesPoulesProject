@@ -5,7 +5,6 @@
 #define ACTIVE_MAIL 1
 
 
-
 #define SENDER_MAIL "cyrille.devops@gmail.com"
 #define SENDER_PASSWORD "yljc wrcv qsop wmyg"
 

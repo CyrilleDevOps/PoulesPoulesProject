@@ -24,6 +24,7 @@
 #include "esp_log.h"
 
 #include "PoulesAPI.h"
+#include "PoulesMail.h"
 
 //#define ADVANCED_OUTPUT 1
 //#define TAG "RF433"
@@ -197,6 +198,7 @@ void receiver_rf433(void* pvParameter)
   unsigned Action=0;
 
     porte *ThePorte=NULL;
+    char*  action=NULL;
     //ThePorte = malloc(sizeof(porte)+4);
     ThePorte = pvParameter;
 
@@ -212,24 +214,32 @@ void receiver_rf433(void* pvParameter)
       if (Action==1765432013)
       {
            
-        ThePorte->Moteur_Porte.Sens = MOTEUR_OUVERTURE;
+        //ThePorte->Moteur_Porte.Sens = MOTEUR_OUVERTURE;
         ESP_LOGD(TAG_RF, "Ouvre Porte (0:Arret-1:Ouvre-2:Ferme/0:action): %d\n",ThePorte->Moteur_Porte.Sens);
-        xTaskCreate(Task_Action_Porte,"ACTION_PORTE",2048 ,ThePorte,1,NULL);    
+        action="ouvre";
+        Action_Porte(ThePorte,action);
+        //xTaskCreate(Task_Action_Porte,"ACTION_PORTE",2048 ,ThePorte,1,NULL);    
 
       }
       else if (Action==2876543014)
       {  
-        ThePorte->Moteur_Porte.Sens = MOTEUR_FERMETURE;
+        //ThePorte->Moteur_Porte.Sens = MOTEUR_FERMETURE;
         ESP_LOGD(TAG_RF, "Ouvre Porte (0:Arret-1:Ouvre-2:Ferme/0:action): %d\n",ThePorte->Moteur_Porte.Sens);
-        xTaskCreate(Task_Action_Porte,"ACTION_PORTE",2048 ,ThePorte,1,NULL);    
+        action="ferme";
+        Action_Porte(ThePorte,action);
+        //xTaskCreate(Task_Action_Porte,"ACTION_PORTE",2048 ,ThePorte,1,NULL);    
       }
       else if (Action==16736120)
-      { porte *myPorteStatus=NULL;
+      {/* porte *myPorteStatus=NULL;
         myPorteStatus = malloc(sizeof(porte)+4);  
         Config_Struct_Porte(myPorteStatus); 
-        position_porte (myPorteStatus );
-        ESP_LOGD(TAG_RF, "Position de la Porte %d.\n", myPorteStatus->Porte_Position);
-        free(myPorteStatus);
+        
+        position_porte (ThePorte );
+        */
+        ESP_LOGD(TAG_RF, "Position de la Porte %s.\n", position_porte_texte(position_porte(ThePorte )));
+        action = position_porte_texte(position_porte(ThePorte ));
+        Poules_Mail_content ("Statut_Porte",action) ;
+        //free(myPorteStatus);
       }
       else if (Action==16736114)
       { //

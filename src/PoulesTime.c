@@ -136,8 +136,9 @@ void scheduled_task(void *pvParameter)
             if (ThePorte->Porte_Position==PORTE_OUVERTE)
                 {action="ferme";
                  Poules_Mail_content ("Scheduling_Porte","Fermeture") ;
+                 Action_Porte(ThePorte,action);
                 }
-                Action_Porte(ThePorte,action);
+               
             ESP_LOGD(TAG_SCHEDULE , "Fin ************************************\n");    
             //free(myPorte);
         }

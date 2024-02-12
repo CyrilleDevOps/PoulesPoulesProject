@@ -409,7 +409,7 @@ void Action_Porte(porte *myPorte,char*  action)
     else if (strcmp(action,"statut")==0 )    //Ferme_Porte();
         {
         ESP_LOGD(TAG_API, "ACTION_Porte->Position de la Porte %d.\n", myPorte->Porte_Position);
-        action = position_porte_texte(myPorte->Porte_Position);
+        action = position_porte_texte(position_porte(myPorte ));
         Poules_Mail_content ("Statut_Porte",action) ;
         }
 

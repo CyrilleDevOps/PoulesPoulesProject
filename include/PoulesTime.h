@@ -9,5 +9,8 @@
 #define HEURE_FERMETURE  17    
 #define HEURE_MINUTE_FERMETURE  00
 
+#define TEMPO_MUTEX 5
+#define TEMPO_TIME 2
+
 void obtain_time(void);
 void scheduled_task(void *pvParameter);

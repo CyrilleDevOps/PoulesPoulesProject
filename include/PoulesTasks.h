@@ -1,0 +1,2 @@
+void TaskDeepSleep();
+void TaskSchedulePorte();

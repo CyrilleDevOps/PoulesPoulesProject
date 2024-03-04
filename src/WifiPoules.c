@@ -20,11 +20,14 @@
 #include <PoulesMail.h>
 #include <PoulesAPI.h>
 #include "esp32_rf_receiver.h"
+//#include "PoulesLowPower.h"
+#include "PoulesTasks.h"
+#include "PoulesGlobals.h"
 
 //static const char *TAG  = "PoulesPoules Wifi";
 static bool demandeConnexion = false;
 httpd_handle_t server_httpd = NULL;
-porte *myPorte=NULL;
+//porte *myPorte=NULL;
 
 
 // Gestionnaire d'évènements
@@ -43,51 +46,37 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
         // reconnexion ?
         ESP_LOGI(TAG_WIFI , "Deconnexion !");
             esp_wifi_connect();
-            free(myPorte);
+            //free(myPorte);
     } 
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) 
     {
-         // Create a task with the scheduled_task function as the entry point
-        int erreur_config_receiver=0;
+        //int erreur_config_receiver=0;
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        myPorte = malloc(sizeof(porte)+4);  
-        Config_Struct_Porte(myPorte);
-        myPorte->Porte_Position=position_porte (myPorte);
-        if ( MODE_SIMU==1)
-            {   blink_led(Led_Ouverte,1);
-                blink_led(Led_Fermee,0);
-            }
-        //Affiche_Struct_Porte(myPorte); 
         ESP_LOGI(TAG_WIFI , "Adresse IP : " IPSTR, IP2STR(&event->ip_info.ip));
         obtain_time();
-        ESP_LOGI(TAG_SCHEDULE, "Start " );
-        erreur_config_receiver= xTaskCreate(&scheduled_task, "ScheduledTask", 12288, myPorte, 5, NULL);
-        if (erreur_config_receiver != 0)
-        {    
-            ESP_LOGI(TAG_SCHEDULE, "Task Ok " );
-        }
-        if (server_httpd == NULL) 
-        {   ESP_LOGI(TAG_WIFI , "Demarrage serveur HTTP");
-            server_httpd = start_webserver();
-        }
-
-        // initialize RF433 Receiver
-        ESP_LOGI(TAG_WIFI, "Configuration receiver\n");
-        erreur_config_receiver= Config_receiver_rf433 ();
-        ESP_LOGI(TAG_WIFI, "Configuration receiver : %d (0=erreur)\n",erreur_config_receiver);
-        if (erreur_config_receiver != 0)
-        {    
-            xTaskCreate(&receiver_rf433, "receiver_rf433", 2048, myPorte, 3, NULL);
-        }
-
 
         char *message=NULL;
         message = (char *) calloc(1, BUF_SIZE);
         snprintf((char *) message, BUF_SIZE, "Adresse IP : %d:%d:%d:%d" , IP2STR(&event->ip_info.ip));
         Poules_Mail_content ("INIT sur IP : ",message) ;
         free (message);
-        
-       
+
+        /// SERVER HTTP
+        if (server_httpd == NULL) 
+        {   ESP_LOGI(TAG_WIFI , "Demarrage serveur HTTP");
+            server_httpd = start_webserver();
+        }
+
+        // Création d'un mutex
+        mutexActionPorte = xSemaphoreCreateMutex();
+        if( mutexActionPorte != NULL )
+        {
+            /// DEEP SLEEP
+            TaskSchedulePorte();
+            TaskDeepSleep();
+            
+        }
+
     }
 }
 

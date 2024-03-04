@@ -2,6 +2,7 @@
 //#include <PoulesAPI.h>
 //#include <PoulesTime.h>
 #include <WifiPoules.h>
+#include <PoulesTasks.h>
 //#include <PoulesMail.h>
 //#include <PoulesDashboard.h>
 
@@ -18,9 +19,11 @@
 #define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
 #include "esp_log.h"
 #include "nvs_flash.h"
-
+//#include "PoulesLowPower.h"
+//#include "PoulesGlobals.h"
 
 #define TAG_MAIN "Start"
+SemaphoreHandle_t mutexActionPorte = NULL;
 
 /*
 void app_main_wifi()
@@ -116,7 +119,9 @@ esp_restart();
 void app_main() //Receiver 433
 {
   int erreur_config_receiver=0;
-  
+
+
+
   // free (myPorte);
   //esp_log_level_set(TAG_API, ESP_LOG_DEBUG);
   //esp_log_level_set(TAG_RF, ESP_LOG_WARN);
@@ -128,13 +133,12 @@ void app_main() //Receiver 433
     // Initialize the WiFi and connect to the network
     
     nvs_flash_init();
-   
     if(init_wifi() == ESP_OK)
     {
         connect_wifi();
     } 
+    
 
-  
 
 }
 

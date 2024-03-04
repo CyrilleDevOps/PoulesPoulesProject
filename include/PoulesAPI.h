@@ -5,8 +5,9 @@
 //Global
 
 
-#define MODE_SIMU 0
+#define MODE_SIMU 1
 #define TAG_API "API"
+
 
 
 //Declaration Config GPIO

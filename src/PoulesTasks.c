@@ -51,7 +51,6 @@ void TaskSchedulePorte()
         Config_Struct_Porte(myPorte);
         myPorte->Porte_Position=position_porte (myPorte);    
 
-
         /// TASK SCHEDULE
         ESP_LOGI(TAG_SCHEDULE, "Start " );
         int erreur_config_receiver=0;

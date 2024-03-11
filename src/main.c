@@ -114,24 +114,12 @@ vTaskDelay(1000 / portTICK_PERIOD_MS);
 esp_restart();
 //
 }
-*/
 
+*/
 void app_main() //Receiver 433
 {
   int erreur_config_receiver=0;
 
-
-
-  // free (myPorte);
-  //esp_log_level_set(TAG_API, ESP_LOG_DEBUG);
-  //esp_log_level_set(TAG_RF, ESP_LOG_WARN);
-  //esp_log_level_set(TAG_MAIN, ESP_LOG_NONE);
-
-   // initialize NVS (nécessaire pour le Wifi)  
-  //app_main_wifi();
-
-    // Initialize the WiFi and connect to the network
-    
     nvs_flash_init();
     if(init_wifi() == ESP_OK)
     {

@@ -6,7 +6,7 @@
 #define HEURE_OUVERTURE  6  
 //#define HEURE_MINUTE_OUVERTURE  30
 
-#define HEURE_FERMETURE  18    
+#define HEURE_FERMETURE  20    
 //#define HEURE_MINUTE_FERMETURE  00
 
 #define TEMPO_MUTEX 10

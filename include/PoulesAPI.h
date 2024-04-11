@@ -5,7 +5,7 @@
 //Global
 
 
-#define MODE_SIMU 1
+#define MODE_SIMU 0
 #define TAG_API "API"
 
 

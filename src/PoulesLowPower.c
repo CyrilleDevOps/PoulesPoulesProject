@@ -13,7 +13,7 @@
 
 void deep_sleep_task(void *args)
 {   
-    ESP_LOGI(TAG_SLEEP,"Debut Mutex");
+    ESP_LOGD(TAG_SLEEP,"Debut Mutex");
     xSemaphoreTake( mutexActionPorte, portMAX_DELAY );
 
     struct timeval now;
@@ -23,19 +23,19 @@ void deep_sleep_task(void *args)
     char *message=NULL;
     message = (char *) calloc(1, BUF_SIZE);
     snprintf((char *) message, BUF_SIZE, "Cause : %d  --  Elapse:%d" , ESP_SLEEP_WAKEUP_TIMER,sleep_time_ms);
-    Poules_Mail_content ("Deep WakeUP : ",message) ;
+    Poules_Mail_content2 (0,"Deep WakeUP : ",message) ;
     free (message);   
     switch (esp_sleep_get_wakeup_cause()) {
         case ESP_SLEEP_WAKEUP_TIMER: {
-            printf("Wake up from timer. Time spent in deep sleep: %dms\n", sleep_time_ms);
-            ESP_LOGI(TAG_SLEEP,"Fin Mutex");
+            ESP_LOGD(TAG_SLEEP,"Wake up from timer. Time spent in deep sleep: %dms\n", sleep_time_ms);
+            ESP_LOGD(TAG_SLEEP,"Fin Mutex");
             xSemaphoreGive( mutexActionPorte );
             break;
         }
         case ESP_SLEEP_WAKEUP_UNDEFINED:
         default:
-            printf("Not a deep sleep reset\n");
-            ESP_LOGI(TAG_SLEEP,"Fin Mutex");
+            ESP_LOGD(TAG_SLEEP,"Not a deep sleep reset\n");
+            ESP_LOGD(TAG_SLEEP,"Fin Mutex");
             xSemaphoreGive( mutexActionPorte );
     }
 
@@ -43,7 +43,7 @@ void deep_sleep_task(void *args)
 
     
     rtc_gpio_isolate(GPIO_NUM_12);
-    printf("Entering deep sleep\n");
+    ESP_LOGD(TAG_SLEEP,"Entering deep sleep\n");
     
     // get deep sleep enter time
     
@@ -53,8 +53,10 @@ void deep_sleep_task(void *args)
     esp_deep_sleep_start();
 }
 
-void setup_rtc_timer_wakeup(void)
-{    const int wakeup_time_sec = WAKEUP_TIME;
-    printf("Enabling timer wakeup, %ds\n", wakeup_time_sec);
+void setup_rtc_timer_wakeup(int wakeup_time_sec )
+{   
+    // const int wakeup_time_sec = WAKEUP_TIME;
+
+    ESP_LOGI(TAG_SLEEP,"Enabling timer wakeup, %ds\n", wakeup_time_sec);
     ESP_ERROR_CHECK(esp_sleep_enable_timer_wakeup(wakeup_time_sec * uS_TO_S_FACTOR));
 }

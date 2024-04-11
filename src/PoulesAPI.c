@@ -7,6 +7,8 @@
 
 #include "PoulesAPI.h"
 #include "PoulesMail.h"
+#include "PoulesGlobals.h"
+#include <WifiPoules.h>
 
 #include "esp_log.h"
 
@@ -162,19 +164,19 @@ void Task_Action_Porte(void *Parametre_Porte)
 
     if (ThePorte->Moteur_Porte.Sens==MOTEUR_OUVERTURE&&Position_Porte==PORTE_FERMEE)
         {
-            ESP_LOGI(TAG_API,"API_Action_Porte->OUVERTURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,Position_Porte);
+            ESP_LOGD(TAG_API,"API_Action_Porte->OUVERTURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,Position_Porte);
             Poules_Mail_content ("API_Action_Porte","Ouverture de la porte") ;
             s_Mvt_Porte=0;
         }
     else  if (ThePorte->Moteur_Porte.Sens==MOTEUR_FERMETURE&&Position_Porte==PORTE_OUVERTE)
         {
-            ESP_LOGI(TAG_API,"API_Action_Porte->FERMETURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,Position_Porte);
+            ESP_LOGD(TAG_API,"API_Action_Porte->FERMETURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,Position_Porte);
             Poules_Mail_content ("API_Action_Porte","Fermeture de la porte") ;
             s_Mvt_Porte=0;
         }
     else
         {
-            ESP_LOGI(TAG_API,"API_Action_Porte->FORCE OUVERTURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,Position_Porte);
+            ESP_LOGD(TAG_API,"API_Action_Porte->FORCE OUVERTURE : %d/%d \n",ThePorte->Moteur_Porte.Sens,Position_Porte);
             Poules_Mail_content ("API_Action_Porte","Ouverture forcée de la porte") ;
             s_Mvt_Porte=0;
             ThePorte->Moteur_Porte.Sens=MOTEUR_OUVERTURE;
@@ -255,7 +257,7 @@ void Actioner_Porte(porte *ThePorte)
     int Led1_Porte_Fermee= Led_Fermee;
     int Led2_Porte_Ouverte=Led_Ouverte;
 
-    ESP_LOGI(TAG_API,"Debut actionner Porte Sens: %d / Position :%d \n",ThePorte->Moteur_Porte.Sens,ThePorte->Porte_Position);
+    ESP_LOGD(TAG_API,"Debut actionner Porte Sens: %d / Position :%d \n",ThePorte->Moteur_Porte.Sens,ThePorte->Porte_Position);
  
     if (ThePorte->Moteur_Porte.Sens==MOTEUR_OUVERTURE && ThePorte->Porte_Position==PORTE_FERMEE)
         {
@@ -395,14 +397,14 @@ void Action_Porte(porte *myPorte,char*  action)
     if (strcmp(action,"ouvre")==0 )         //Ouvre_Porte();
         { 
         myPorte->Moteur_Porte.Sens = MOTEUR_OUVERTURE;
-        ESP_LOGI(TAG_API , "ACTION_Porte->Position de la Porte %s -Ouvre Porte (0:Arret-1:Ouvre-2:Ferme/0:action) : %d\n", position_porte_texte(myPorte->Porte_Position),myPorte->Moteur_Porte.Sens);
+        ESP_LOGD(TAG_API , "ACTION_Porte->Position de la Porte %s -Ouvre Porte (0:Arret-1:Ouvre-2:Ferme/0:action) : %d\n", position_porte_texte(myPorte->Porte_Position),myPorte->Moteur_Porte.Sens);
         //xTaskCreate(Task_Action_Porte,"ACTION_PORTE",2048 ,myPorte,1,NULL);      
         Actioner_Porte (myPorte);
         }
     else if (strcmp(action,"ferme")==0 )    //Ferme_Porte();
         {   
         myPorte->Moteur_Porte.Sens = MOTEUR_FERMETURE;
-        ESP_LOGI(TAG_API , "ACTION_Porte->Position de la Porte %s - Ferme Porte (0:Arret-1:Ouvre-2:Ferme/0:action): %d\n", position_porte_texte(myPorte->Porte_Position),myPorte->Moteur_Porte.Sens);
+        ESP_LOGD(TAG_API , "ACTION_Porte->Position de la Porte %s - Ferme Porte (0:Arret-1:Ouvre-2:Ferme/0:action): %d\n", position_porte_texte(myPorte->Porte_Position),myPorte->Moteur_Porte.Sens);
         //xTaskCreate(Task_Action_Porte,"ACTION_PORTE",2048 ,myPorte,1,NULL);
         Actioner_Porte (myPorte);
         }  
@@ -426,7 +428,7 @@ void Poules_Mail (message_mail *message)
          
         // Send the email
         if (message->ack >= 0) {
-            ESP_LOGI("EMAIL", "Email sent successfully");
+            ESP_LOGD("EMAIL", "Email sent successfully");
         } else {
             ESP_LOGE("EMAIL", "Failed to send email");
         }
@@ -455,4 +457,35 @@ void Poules_Mail_content (char *subject,char *body)
  }
 }
 
+void Poules_Mail_content2 (int Priorite, char *subject,char *body) 
+{
 
+    message_mail *Mymessage=NULL;
+    Mymessage = malloc(sizeof(message_mail)+4);
+       
+    strcpy(Mymessage->from,FROM_MAIL);
+    strcpy(Mymessage->to ,RECIPIENT_MAIL);
+    strcpy(Mymessage->subject ,subject);
+    strcpy(Mymessage->body ,body);
+    Mymessage->ack =-99;
+    
+
+    if  (ACTIVE_MAIL || Priorite ==2)
+    {  
+     if (Launch_WIFI ==0)
+         { Launch_Wifi();
+           vTaskDelay(10000/portTICK_PERIOD_MS);
+           ESP_LOGI(TAG_API ,"Mail ->  %s", subject);
+           Poules_Mail (Mymessage);
+         }
+    else
+         { ESP_LOGI(TAG_API ,"Mail ->  %s", subject);
+           Poules_Mail (Mymessage);
+         }
+    }
+    if  ( Priorite <=2)
+    {  
+        ESP_LOGI(TAG_API ,"Mail ->  %s", subject);
+    }
+    free(Mymessage);
+}

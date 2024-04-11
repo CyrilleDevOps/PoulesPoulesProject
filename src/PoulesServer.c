@@ -37,7 +37,7 @@ esp_err_t get_handler(httpd_req_t *req)
         // copie la valeur dans un buffer
         if (httpd_req_get_hdr_value_str(req, "Host", buf, buf_len) == ESP_OK) 
         {
-            ESP_LOGI(TAG_WEB , "Header => Host: %s", buf);
+            ESP_LOGD(TAG_WEB , "Header => Host: %s", buf);
         }
         free(buf);
     }
@@ -51,12 +51,12 @@ esp_err_t get_handler(httpd_req_t *req)
         if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) 
         {
             char param[32];
-            ESP_LOGI(TAG_WEB , "Requete => %s", buf);
+            ESP_LOGD(TAG_WEB , "Requete => %s", buf);
             
             // récupère la valeur d'un paramètre de la requête (exemple : ?param1=val1&param2=val2)
             if (httpd_query_key_value(buf, "action", param, sizeof(param)) == ESP_OK) 
             {
-                ESP_LOGI(TAG_WEB , "Parametre => action=%s", param);
+                ESP_LOGD(TAG_WEB , "Parametre => action=%s", param);
                 action = param;
             }            
         }
@@ -91,7 +91,7 @@ esp_err_t post_handler(httpd_req_t *req)
 {
     char content[128];
 
-    ESP_LOGI(TAG_WEB , "Longueur contenu POST : %d", req->content_len);
+    ESP_LOGD(TAG_WEB , "Longueur contenu POST : %d", req->content_len);
 
     // tronque si la longueur du contenu est supérieure au buffer
     size_t recv_size = MIN(req->content_len, sizeof(content));
@@ -110,7 +110,7 @@ esp_err_t post_handler(httpd_req_t *req)
         
         return ESP_FAIL;
     }
-    ESP_LOGI(TAG_WEB , "Contenu POST : %s", content);
+    ESP_LOGD(TAG_WEB , "Contenu POST : %s", content);
 
     // envoie une réponse
     const char resp[] = "Test Reponse POST";
@@ -142,7 +142,7 @@ httpd_handle_t start_webserver()
     };
     */
 
-    ESP_LOGI(TAG_WEB , "Port serveur HTTP : '%d'", config.server_port);
+    ESP_LOGD(TAG_WEB , "Port serveur HTTP : '%d'", config.server_port);
 
     httpd_handle_t server = NULL;
     // Démarre le serveur HTTP

@@ -52,22 +52,22 @@ void TaskSchedulePorte()
         myPorte->Porte_Position=position_porte (myPorte);    
 
         /// TASK SCHEDULE
-        ESP_LOGI(TAG_SCHEDULE, "Start " );
+        ESP_LOGD(TAG_SCHEDULE, "Start " );
         int erreur_config_receiver=0;
         erreur_config_receiver= xTaskCreate(&scheduled_task, "ScheduledTask", 12288, myPorte, 2, NULL);
         if (erreur_config_receiver != 0)
         {    
-            ESP_LOGI(TAG_SCHEDULE, "Task Ok " );
+            ESP_LOGD(TAG_SCHEDULE, "Task Ok " );
         }
 }
 
 void TaskRF433()
 {
         // initialize RF433 Receiver
-        ESP_LOGI(TAG_WIFI, "Configuration receiver\n");
+        ESP_LOGD(TAG_WIFI, "Configuration receiver\n");
         int erreur_config_receiver=0;
         erreur_config_receiver= Config_receiver_rf433 ();
-        ESP_LOGI(TAG_WIFI, "Configuration receiver : %d (0=erreur)\n",erreur_config_receiver);
+        ESP_LOGD(TAG_WIFI, "Configuration receiver : %d (0=erreur)\n",erreur_config_receiver);
         if (erreur_config_receiver != 0)
         {    
             xTaskCreate(&receiver_rf433, "receiver_rf433", 2048, myPorte, 3, NULL);
@@ -75,8 +75,9 @@ void TaskRF433()
 }
 
 void TaskDeepSleep()
-{
+{       int SleepingTime = 0;
         ///DEEP SLEEP
-        setup_rtc_timer_wakeup();
+        SleepingTime =  CalculSleepingTime();
+        setup_rtc_timer_wakeup(SleepingTime);
         xTaskCreate(deep_sleep_task, "deep_sleep_task", 4096, NULL, 1, NULL);
 }

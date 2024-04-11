@@ -9,8 +9,9 @@
 #define HEURE_FERMETURE  20    
 //#define HEURE_MINUTE_FERMETURE  00
 
-#define TEMPO_MUTEX 10
+#define TEMPO_MUTEX 3
 #define TEMPO_TIME 2
 
 void obtain_time(void);
 void scheduled_task(void *pvParameter);
+int CalculSleepingTime();

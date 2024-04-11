@@ -27,7 +27,7 @@
 //static const char *TAG  = "PoulesPoules Wifi";
 static bool demandeConnexion = false;
 httpd_handle_t server_httpd = NULL;
-//porte *myPorte=NULL;
+
 
 
 // Gestionnaire d'évènements
@@ -52,7 +52,7 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
     {
         //int erreur_config_receiver=0;
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        ESP_LOGI(TAG_WIFI , "Adresse IP : " IPSTR, IP2STR(&event->ip_info.ip));
+        ESP_LOGD(TAG_WIFI , "Adresse IP : " IPSTR, IP2STR(&event->ip_info.ip));
         obtain_time();
 
         char *message=NULL;
@@ -63,20 +63,21 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
 
         /// SERVER HTTP
         if (server_httpd == NULL) 
-        {   ESP_LOGI(TAG_WIFI , "Demarrage serveur HTTP");
-            server_httpd = start_webserver();
-        }
-
-        // Création d'un mutex
-        mutexActionPorte = xSemaphoreCreateMutex();
-        if( mutexActionPorte != NULL )
-        {
-            /// DEEP SLEEP
-            TaskSchedulePorte();
-            TaskDeepSleep();
-            
-        }
-
+            {   ESP_LOGI(TAG_WIFI , "Demarrage serveur HTTP");
+                server_httpd = start_webserver();
+            }
+        if (Launch_WIFI <0)
+            {// Création d'un mutex
+                mutexActionPorte = xSemaphoreCreateMutex();
+                if( mutexActionPorte != NULL )
+                {
+                    ESP_LOGI(TAG_WIFI , "Lancement Task");
+                    /// DEEP SLEEP
+                    TaskSchedulePorte();
+                    TaskDeepSleep();
+                }
+            }
+        Launch_WIFI=1;
     }
 }
 
@@ -132,4 +133,17 @@ void connect_wifi()
     ESP_ERROR_CHECK(esp_wifi_start());
 }
 
+void Launch_Wifi()
+{
+esp_err_t ret = nvs_flash_init();
+      if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) 
+      {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+      }
+      ESP_ERROR_CHECK(ret);
 
+      if(init_wifi() == ESP_OK )
+      {        connect_wifi();
+      }
+}

@@ -18,3 +18,4 @@
 //static esp_err_t init_wifi()
 esp_err_t init_wifi();
 void connect_wifi();
+void Launch_Wifi();

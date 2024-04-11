@@ -2,7 +2,7 @@
 #define MAIL_SERVER "smtp.googlemail.com"
 #define MAIL_PORT "587"
 
-#define ACTIVE_MAIL 1
+#define ACTIVE_MAIL 0
 
 
 #define SENDER_MAIL "cyrille.devops@gmail.com"
@@ -36,3 +36,4 @@ void smtp_client_task(void *pvParameters);
 void Affiche_Mail_Content(char *Etape,message_mail *Mymessage);
 void Poules_Mail (message_mail *message);
 void Poules_Mail_content (char *subject,char *body);
+void Poules_Mail_content2 (int Priorite, char *subject,char *body);
